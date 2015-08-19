@@ -1,50 +1,56 @@
-﻿using Lidgren.Network;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Windows.Forms;
 using EzGame;
 using EzGame.Input;
 using EzGame.Perspective.Planar;
+using Lidgren.Network;
+using Microsoft.Xna.Framework;
 
 namespace Shooter2D
 {
     public class Game : Microsoft.Xna.Framework.Game
     {
-        public static ulong Version { get { return Globe.Version; } set { Globe.Version = value; } }
         public static float Speed = 1;
-        public enum States { MainMenu, Game }
         public static States State = States.MainMenu;
-
-        public enum Packets { Connection, Disconnection, Initial, Position }
-
         public static Player Self;
         public static Player[] Players;
+        public static string MpName = "Guest";
+
+        public static ulong Version
+        {
+            get { return Globe.Version; }
+            set { Globe.Version = value; }
+        }
 
         public Game()
         {
             Globe.GraphicsDeviceManager = new GraphicsDeviceManager(this)
-            { PreferredBackBufferWidth = 960, PreferredBackBufferHeight = 540, SynchronizeWithVerticalRetrace = false };
+            {PreferredBackBufferWidth = 960, PreferredBackBufferHeight = 540, SynchronizeWithVerticalRetrace = false};
             Content.RootDirectory = "Content";
         }
 
         protected override void LoadContent()
         {
             #region Globalization
-            Globe.Batches = new Batch[1] { new Batch(GraphicsDevice) };
-            Globe.Form = (System.Windows.Forms.Form)System.Windows.Forms.Form.FromHandle(Window.Handle);
+
+            Globe.Batches = new Batch[1] {new Batch(GraphicsDevice)};
+            Globe.Form = (Form) Control.FromHandle(Window.Handle);
             Globe.GameWindow = Window;
             Globe.ContentManager = Content;
             Globe.GraphicsDevice = GraphicsDevice;
             Globe.Viewport = GraphicsDevice.Viewport;
             Globe.GraphicsAdapter = GraphicsDevice.Adapter;
+
             #endregion
+
             Sound.Initialize(256);
             Performance.UpdateFramesPerSecondBuffer = new float[180];
             Performance.DrawFramesPerSecondBuffer = new float[3];
             MultiPlayer.Initialize();
             IsMouseVisible = true;
         }
+
         protected override void Update(GameTime Time)
         {
             Mouse.Update();
@@ -59,13 +65,24 @@ namespace Shooter2D
             Profiler.Start("Game Update");
             switch (State)
             {
-                #region MainMenu
+                    #region MainMenu
+
                 case States.MainMenu:
-                    if (Keyboard.Pressed(Keyboard.Keys.F1)) { CreateLobby("Server"); State = States.Game; }
-                    else if (Keyboard.Pressed(Keyboard.Keys.F2)) { MultiPlayer.Connect("Game", "127.0.0.1", 6121, Globe.Version, MpName); }
+                    if (Keyboard.Pressed(Keyboard.Keys.F1))
+                    {
+                        CreateLobby("Server");
+                        State = States.Game;
+                    }
+                    else if (Keyboard.Pressed(Keyboard.Keys.F2))
+                    {
+                        MultiPlayer.Connect("Game", "127.0.0.1", 6121, Globe.Version, MpName);
+                    }
                     break;
-                #endregion
-                #region Game
+
+                    #endregion
+
+                    #region Game
+
                 case States.Game:
                     for (byte i = 0; i < Players.Length; i++)
                         if (Players[i] != null)
@@ -74,49 +91,63 @@ namespace Shooter2D
                         }
 
                     if (Timers.Tick("Positions") && (MultiPlayer.Type("Game") == MultiPlayer.Types.Server))
-                        foreach (Player Player1 in Players)
+                        foreach (var Player1 in Players)
                             if (Player1 != null && (Player1.Connection != null))
                             {
-                                NetOutgoingMessage O = MultiPlayer.Construct("Game", Packets.Position);
-                                foreach (Player Player2 in Players)
+                                var O = MultiPlayer.Construct("Game", Packets.Position);
+                                foreach (var Player2 in Players)
                                     if ((Player2 != Player1) && (Player2 != null))
                                     {
                                         O.Write(Player2.Slot);
                                         O.Write(Player2.Position);
                                         O.Write(Player2.Angle);
                                     }
-                                MultiPlayer.SendTo("Game", O, Player1.Connection, NetDeliveryMethod.UnreliableSequenced, 1);
+                                MultiPlayer.SendTo("Game", O, Player1.Connection, NetDeliveryMethod.UnreliableSequenced,
+                                    1);
                             }
                     break;
+
                     #endregion
             }
             Profiler.Stop("Game Update");
 
             #region Networking
+
             MultiPlayer.Flush("Game");
             NetIncomingMessage I;
             while ((I = MultiPlayer.Read("Game")) != null)
             {
-                bool Break = false;
+                var Break = false;
                 switch (I.MessageType)
                 {
-                    case NetIncomingMessageType.ConnectionApproval: Read(Packets.Connection, I); break;
-                    case NetIncomingMessageType.Data: Read((Packets)I.ReadByte(), I); break;
+                    case NetIncomingMessageType.ConnectionApproval:
+                        Read(Packets.Connection, I);
+                        break;
+                    case NetIncomingMessageType.Data:
+                        Read((Packets) I.ReadByte(), I);
+                        break;
                     case NetIncomingMessageType.StatusChanged:
-                        NetConnectionStatus Status = ((MultiPlayer.Type("Game") == MultiPlayer.Types.Client) ? (NetConnectionStatus)I.ReadByte() :
-                            ((MultiPlayer.Type("Game") == MultiPlayer.Types.Server) ? I.SenderConnection.Status : NetConnectionStatus.None));
+                        var Status = ((MultiPlayer.Type("Game") == MultiPlayer.Types.Client)
+                            ? (NetConnectionStatus) I.ReadByte()
+                            : ((MultiPlayer.Type("Game") == MultiPlayer.Types.Server)
+                                ? I.SenderConnection.Status
+                                : NetConnectionStatus.None));
                         switch (Status)
                         {
                             case NetConnectionStatus.Connected:
                                 if (MultiPlayer.Type("Game") == MultiPlayer.Types.Client)
                                 {
-                                    NetIncomingMessage Hail = I.SenderConnection.RemoteHailMessage;
-                                    Read((Packets)Hail.ReadByte(), Hail);
+                                    var Hail = I.SenderConnection.RemoteHailMessage;
+                                    Read((Packets) Hail.ReadByte(), Hail);
                                 }
                                 break;
                             case NetConnectionStatus.Disconnected:
-                                if ((MultiPlayer.Type("Game") == MultiPlayer.Types.Client) && (I.SenderConnection.Status == NetConnectionStatus.Disconnected))
-                                { QuitLobby(); Break = true; }
+                                if ((MultiPlayer.Type("Game") == MultiPlayer.Types.Client) &&
+                                    (I.SenderConnection.Status == NetConnectionStatus.Disconnected))
+                                {
+                                    QuitLobby();
+                                    Break = true;
+                                }
                                 else Read(Packets.Disconnection, I);
                                 break;
                         }
@@ -124,10 +155,12 @@ namespace Shooter2D
                 }
                 if (Break) break;
             }
+
             #endregion
 
             base.Update(Time);
         }
+
         protected override void Draw(GameTime Time)
         {
             Performance.Draw(Time);
@@ -136,13 +169,18 @@ namespace Shooter2D
             Profiler.Start("Game Draw");
             switch (State)
             {
-                #region MainMenun
+                    #region MainMenun
+
                 case States.MainMenu:
                     break;
-                #endregion
-                #region Game
+
+                    #endregion
+
+                    #region Game
+
                 case States.Game:
                     break;
+
                     #endregion
             }
             Profiler.Stop("Game Draw");
@@ -154,8 +192,12 @@ namespace Shooter2D
             base.Draw(Time);
         }
 
-        public static string MpName = "Guest";
-        protected override void OnExiting(object sender, EventArgs args) { QuitLobby(); base.OnExiting(sender, args); }
+        protected override void OnExiting(object sender, EventArgs args)
+        {
+            QuitLobby();
+            base.OnExiting(sender, args);
+        }
+
         public static bool CreateLobby(string Name)
         {
             if (MultiPlayer.Type("Game") == null)
@@ -163,11 +205,12 @@ namespace Shooter2D
                 Players = new Player[10];
                 Self = Player.Add(new Player(Name));
                 MultiPlayer.Start("Game", 6121, Players.Length);
-                Timers.Add("Positions", (1 / 30d));
+                Timers.Add("Positions", (1/30d));
                 return true;
             }
-            else return false;
+            return false;
         }
+
         public static void QuitLobby()
         {
             MultiPlayer.Shutdown("Game", string.Empty);
@@ -175,6 +218,7 @@ namespace Shooter2D
             Timers.Remove("Positions");
             State = States.MainMenu;
         }
+
         public static void Read(Packets Packet, NetIncomingMessage I)
         {
             switch (Packet)
@@ -182,14 +226,16 @@ namespace Shooter2D
                 case Packets.Connection:
                     if (MultiPlayer.Type("Game") == MultiPlayer.Types.Server)
                     {
-                        ulong ClientVersion = I.ReadUInt64();
+                        var ClientVersion = I.ReadUInt64();
                         if (ClientVersion == Globe.Version)
                         {
-                            Player Connector = Player.Add(new Player(I.ReadString()) { Connection = I.SenderConnection });
+                            var Connector = Player.Add(new Player(I.ReadString()) {Connection = I.SenderConnection});
                             if (Connector != null)
                             {
-                                MultiPlayer.Send("Game", MultiPlayer.Construct("Game", Packet, Connector.Slot, Connector.Name), I.SenderConnection);
-                                List<object> Details = new List<object>();
+                                MultiPlayer.Send("Game",
+                                    MultiPlayer.Construct("Game", Packet, Connector.Slot, Connector.Name),
+                                    I.SenderConnection);
+                                var Details = new List<object>();
                                 for (byte i = 0; i < Players.Length; i++)
                                     if ((Players[i] != null) && (Players[i] != Connector))
                                     {
@@ -197,37 +243,50 @@ namespace Shooter2D
                                         Details.Add(Players[i].Name);
                                     }
                                     else Details.Add(false);
-                                I.SenderConnection.Approve(MultiPlayer.Construct("Game", Packets.Initial, (byte)Players.Length, Connector.Slot, Details));
+                                I.SenderConnection.Approve(MultiPlayer.Construct("Game", Packets.Initial,
+                                    (byte) Players.Length, Connector.Slot, Details));
                             }
                             else I.SenderConnection.Deny("Full");
                         }
-                        else I.SenderConnection.Deny("Version indifference, Client: " + ClientVersion + " - Server: " + Globe.Version);
+                        else
+                            I.SenderConnection.Deny("Version indifference, Client: " + ClientVersion + " - Server: " +
+                                                    Globe.Version);
                     }
-                    else if (MultiPlayer.Type("Game") == MultiPlayer.Types.Client) { byte Slot = I.ReadByte(); Player.Set(Slot, new Player(I.ReadString())); }
+                    else if (MultiPlayer.Type("Game") == MultiPlayer.Types.Client)
+                    {
+                        var Slot = I.ReadByte();
+                        Player.Set(Slot, new Player(I.ReadString()));
+                    }
                     break;
                 case Packets.Disconnection:
-                    Player Disconnector = ((MultiPlayer.Type("Game") == MultiPlayer.Types.Server) ? Player.Get(I.SenderConnection) :
-                        ((MultiPlayer.Type("Game") == MultiPlayer.Types.Client) ? Players[I.ReadByte()] : null));
+                    var Disconnector = ((MultiPlayer.Type("Game") == MultiPlayer.Types.Server)
+                        ? Player.Get(I.SenderConnection)
+                        : ((MultiPlayer.Type("Game") == MultiPlayer.Types.Client) ? Players[I.ReadByte()] : null));
                     if (Disconnector != null) Player.Remove(Disconnector);
-                    if (MultiPlayer.Type("Game") == MultiPlayer.Types.Server) MultiPlayer.Send("Game", MultiPlayer.Construct("Game", Packets.Disconnection, Disconnector.Slot), I.SenderConnection);
+                    if (MultiPlayer.Type("Game") == MultiPlayer.Types.Server)
+                        MultiPlayer.Send("Game", MultiPlayer.Construct("Game", Packets.Disconnection, Disconnector.Slot),
+                            I.SenderConnection);
                     break;
                 case Packets.Initial:
                     if (MultiPlayer.Type("Game") == MultiPlayer.Types.Client)
                     {
                         Players = new Player[I.ReadByte()];
-                        Self = Player.Set(I.ReadByte(), new Player(MpName) { });
+                        Self = Player.Set(I.ReadByte(), new Player(MpName));
                         for (byte i = 0; i < Players.Length; i++)
                             if (I.ReadBoolean())
                             {
                                 Players[i] = new Player(i, I.ReadString());
                             }
-                        Timers.Add("Positions", (1 / 30d));
+                        Timers.Add("Positions", (1/30d));
                         State = States.Game;
                     }
                     break;
                 case Packets.Position:
-                    Player Sender = ((MultiPlayer.Type("Game") == MultiPlayer.Types.Server) ? Player.Get(I.SenderConnection) : null);
-                    Vector2 Position; float Angle;
+                    var Sender = ((MultiPlayer.Type("Game") == MultiPlayer.Types.Server)
+                        ? Player.Get(I.SenderConnection)
+                        : null);
+                    Vector2 Position;
+                    float Angle;
                     if (MultiPlayer.Type("Game") == MultiPlayer.Types.Server)
                     {
                         if (Sender != null)
@@ -238,7 +297,7 @@ namespace Shooter2D
                     }
                     else if (MultiPlayer.Type("Game") == MultiPlayer.Types.Client)
                     {
-                        byte Count = (byte)((I.LengthBytes - 1) / 12);
+                        var Count = (byte) ((I.LengthBytes - 1)/12);
                         for (byte i = 0; i < Count; i++)
                         {
                             Sender = Players[I.ReadByte()];
@@ -253,6 +312,20 @@ namespace Shooter2D
                     }
                     break;
             }
+        }
+
+        public enum Packets
+        {
+            Connection,
+            Disconnection,
+            Initial,
+            Position
+        }
+
+        public enum States
+        {
+            MainMenu,
+            Game
         }
     }
 }

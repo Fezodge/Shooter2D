@@ -1,11 +1,91 @@
-﻿using Microsoft.Xna.Framework;
+﻿using System.Linq;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
-using System.Linq;
 
 namespace EzGame.Input
 {
     public static class Keyboard
     {
+        private static Microsoft.Xna.Framework.Input.Keys[] LastKs, LastKsConstrains;
+        private static double KsTimer, KsConstraint;
+        private static KeyboardState K, LastK;
+
+        public static void Update(GameTime Time)
+        {
+            LastK = K;
+            K = Microsoft.Xna.Framework.Input.Keyboard.GetState();
+            var Ks = K.GetPressedKeys();
+            foreach (var Key in Ks)
+                if (Key != Microsoft.Xna.Framework.Input.Keys.None)
+                {
+                    if ((LastKs != null) && LastKs.Contains(Key))
+                    {
+                        if (((Time.TotalGameTime.TotalMilliseconds - KsTimer) > KsConstraint) && (InputRecieved != null))
+                        {
+                            InputRecieved((Keys) Key);
+                            KsTimer = Time.TotalGameTime.TotalMilliseconds;
+                            if (LastKsConstrains == null)
+                            {
+                                KsConstraint = 50;
+                                LastKsConstrains = Ks;
+                            }
+                        }
+                    }
+                    else if (InputRecieved != null)
+                    {
+                        InputRecieved((Keys) Key);
+                        KsTimer = Time.TotalGameTime.TotalMilliseconds;
+                    }
+                    if ((LastKsConstrains != null) && !LastKsConstrains.Contains(Key))
+                    {
+                        KsConstraint = 425;
+                        LastKsConstrains = null;
+                    }
+                }
+            if (Ks.Length == 0)
+            {
+                KsConstraint = 425;
+                LastKsConstrains = null;
+            }
+            LastKs = Ks;
+        }
+
+        public static event InputRecievedEvent InputRecieved;
+
+        /// <summary>
+        /// Check if a key on the keyboard has been pressed
+        /// </summary>
+        /// <param name="Key">The keyboard key to check.</param>
+        /// <returns>A True/False statement.</returns>
+        public static bool Pressed(Keys Key)
+        {
+            return (K.IsKeyDown((Microsoft.Xna.Framework.Input.Keys) Key) &&
+                    ((LastK == null) || LastK.IsKeyUp((Microsoft.Xna.Framework.Input.Keys) Key)));
+        }
+
+        /// <summary>
+        /// Check if a key on the keyboard has been released
+        /// </summary>
+        /// <param name="Key">The keyboard key to check.</param>
+        /// <returns>A True/False statement.</returns>
+        public static bool Released(Keys Key)
+        {
+            return (K.IsKeyUp((Microsoft.Xna.Framework.Input.Keys) Key) &&
+                    ((LastK != null) && LastK.IsKeyDown((Microsoft.Xna.Framework.Input.Keys) Key)));
+        }
+
+        /// <summary>
+        /// Check if a key on the keyboard is being held
+        /// </summary>
+        /// <param name="Key">The keyboard key to check.</param>
+        /// <returns>A True/False statement.</returns>
+        public static bool Holding(Keys Key)
+        {
+            return K.IsKeyDown((Microsoft.Xna.Framework.Input.Keys) Key);
+        }
+
+        public delegate void InputRecievedEvent(Keys Key);
+
         public enum Keys
         {
             None = 0,
@@ -633,56 +713,7 @@ namespace EzGame.Input
             //
             // Summary:
             //     CLEAR key
-            OemClear = 254,
+            OemClear = 254
         }
-
-        private static Microsoft.Xna.Framework.Input.Keys[] LastKs, LastKsConstrains;
-        private static double KsTimer, KsConstraint;
-
-        private static KeyboardState K, LastK;
-
-        public static void Update(GameTime Time)
-        {
-            LastK = K; K = Microsoft.Xna.Framework.Input.Keyboard.GetState();
-            Microsoft.Xna.Framework.Input.Keys[] Ks = K.GetPressedKeys();
-            foreach (Microsoft.Xna.Framework.Input.Keys Key in Ks)
-                if (Key != Microsoft.Xna.Framework.Input.Keys.None)
-                {
-                    if ((LastKs != null) && LastKs.Contains(Key))
-                    {
-                        if (((Time.TotalGameTime.TotalMilliseconds - KsTimer) > KsConstraint) && (InputRecieved != null))
-                        {
-                            InputRecieved((Keys)Key);
-                            KsTimer = Time.TotalGameTime.TotalMilliseconds;
-                            if (LastKsConstrains == null) { KsConstraint = 50; LastKsConstrains = Ks; }
-                        }
-                    }
-                    else if (InputRecieved != null) { InputRecieved((Keys)Key); KsTimer = Time.TotalGameTime.TotalMilliseconds; }
-                    if ((LastKsConstrains != null) && !LastKsConstrains.Contains(Key)) { KsConstraint = 425; LastKsConstrains = null; }
-                }
-            if (Ks.Length == 0) { KsConstraint = 425; LastKsConstrains = null; }
-            LastKs = Ks;
-        }
-        public delegate void InputRecievedEvent(Keys Key);
-        public static event InputRecievedEvent InputRecieved;
-
-        /// <summary>
-        /// Check if a key on the keyboard has been pressed
-        /// </summary>
-        /// <param name="Key">The keyboard key to check.</param>
-        /// <returns>A True/False statement.</returns>
-        public static bool Pressed(Keys Key) { return (K.IsKeyDown((Microsoft.Xna.Framework.Input.Keys)Key) && ((LastK == null) || LastK.IsKeyUp((Microsoft.Xna.Framework.Input.Keys)Key))); }
-        /// <summary>
-        /// Check if a key on the keyboard has been released
-        /// </summary>
-        /// <param name="Key">The keyboard key to check.</param>
-        /// <returns>A True/False statement.</returns>
-        public static bool Released(Keys Key) { return (K.IsKeyUp((Microsoft.Xna.Framework.Input.Keys)Key) && ((LastK != null) && LastK.IsKeyDown((Microsoft.Xna.Framework.Input.Keys)Key))); }
-        /// <summary>
-        /// Check if a key on the keyboard is being held
-        /// </summary>
-        /// <param name="Key">The keyboard key to check.</param>
-        /// <returns>A True/False statement.</returns>
-        public static bool Holding(Keys Key) { return K.IsKeyDown((Microsoft.Xna.Framework.Input.Keys)Key); }
     }
 }
