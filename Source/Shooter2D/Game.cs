@@ -61,8 +61,9 @@ namespace Shooter2D
             MultiPlayer.Initialize();
             IsMouseVisible = true;
 
-            Mod.Fore = Mod.Load(@".\Content\Fore.xml");
-            Mod.Back = Mod.Load(@".\Content\Back.xml");
+            Mod.Fore = Mod.LoadTiles(@".\Content\Fore.xml");
+            Mod.Back = Mod.LoadTiles(@".\Content\Back.xml");
+            Mod.Weapons = Mod.LoadWeapons(@".\Content\Weapons.xml");
         }
 
         protected override void Update(GameTime Time)
@@ -83,20 +84,21 @@ namespace Shooter2D
 
                 case States.MainMenu:
                     if (Globe.Active)
-                    if (Keyboard.Pressed(Keyboard.Keys.F1))
-                    {
-                        CreateLobby("Server");
-                        State = States.Game;
-                    }
-                    else if (Keyboard.Pressed(Keyboard.Keys.F2))
-                    {
-                        MultiPlayer.Connect("Game", "71.3.34.68", 6121, Globe.Version, MpName);
-                    }
-                    else if (Keyboard.Pressed(Keyboard.Keys.F3))
-                    {
-                        CreateLobby("Server");
-                        State = States.MapEditor;
-                    }
+                        if (Keyboard.Pressed(Keyboard.Keys.F1))
+                        {
+                            CreateLobby("Server");
+                            State = States.Game;
+                        }
+                        else if (Keyboard.Pressed(Keyboard.Keys.F2))
+                        {
+                            MultiPlayer.Connect("Game", "71.3.34.68", 6121, Globe.Version, MpName);
+                        }
+                        else if (Keyboard.Pressed(Keyboard.Keys.F3))
+                        {
+                            CreateLobby("Server");
+                            Camera.Position = new Vector2((Map.Width / 2f), (Map.Height / 2f));
+                            State = States.MapEditor;
+                        }
                     break;
 
                 #endregion

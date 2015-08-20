@@ -3,6 +3,7 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using EzGame;
+using EzGame.Collision;
 using EzGame.Perspective.Planar;
 
 namespace Shooter2D
@@ -10,15 +11,21 @@ namespace Shooter2D
     public class Map
     {
         public Tile[,] Tiles;
+        public int Width { get { return (Tiles.GetLength(0) * Tile.Width); } }
+        public int Height { get { return (Tiles.GetLength(1) * Tile.Height); } }
+
         public Camera Camera;
         public Vector2 Speed = new Vector2(240, 240);
 
         public Pathfinder Pathfinder;
         public List<Point>[] Waypoints;
 
+        public List<Line> Bullets;
+
         public Map(int Width, int Height)
         {
             Tiles = new Tile[Width, Height];
+            for (int x = 0; x < Width; x++) for (int y = 0; y < Height; y++) Tiles[x, y].Back = 1;
             Camera = new Camera();
             Pathfinder = new Pathfinder(Width, Height);
             Waypoints = new List<Point>[3];

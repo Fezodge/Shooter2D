@@ -1,16 +1,19 @@
-﻿using System;
+﻿using Microsoft.Xna.Framework;
+using System;
 using System.IO;
 using System.Xml;
 using System.Collections.Generic;
 using EzGame.Perspective.Planar;
+using static EzGame.Perspective.Planar.Textures;
 
 namespace Shooter2D
 {
     public static class Mod
     {
         public static Dictionary<ushort, Tile> Fore, Back;
+        public static Dictionary<ushort, Weapon> Weapons;
 
-        public static Dictionary<ushort, Tile> Load(string Path)
+        public static Dictionary<ushort, Tile> LoadTiles(string Path)
         {
             Dictionary<ushort, Tile> Array = new Dictionary<ushort, Tile>();
             if (!File.Exists(Path)) return null;
@@ -59,6 +62,48 @@ namespace Shooter2D
             Reader.Close();
             return Array;
         }
+        public static Dictionary<ushort, Weapon> LoadWeapons(string Path)
+        {
+            Dictionary<ushort, Weapon> Array = new Dictionary<ushort, Weapon>();
+            if (!File.Exists(Path)) return null;
+            XmlTextReader Reader = new XmlTextReader(Path);
+            ushort ID = 0;
+            Weapon Weapon = null;
+            while (Reader.Read())
+                switch (Reader.NodeType)
+                {
+                    case XmlNodeType.Element:
+                        bool End = false;
+                        if (Reader.Name == "Weapon")
+                        {
+                            End = Reader.IsEmptyElement;
+                            Weapon = new Weapon();
+                            while (Reader.MoveToNextAttribute())
+                                if (Reader.Name == "Name") Weapon.Name = Reader.Value;
+                                else if (Reader.Name == "RoundsPerSecond") Weapon.RoundsPerSecond = Convert.ToDouble(Reader.Value);
+                        }
+                        if (Reader.Name == "Origin")
+                        {
+                            while (Reader.MoveToNextAttribute())
+                                if (Reader.Name == "Point") Weapon.Origin = new Origin(Convert.ToSingle(Reader.Value.Split(',')[0]), Convert.ToSingle(Reader.Value.Split(',')[1]));
+                        }
+                        if (End)
+                        {
+                            Array.Add(ID, Weapon);
+                            ID++; Weapon = null;
+                        }
+                        break;
+                    case XmlNodeType.EndElement:
+                        if (Reader.Name == "Tile")
+                        {
+                            Array.Add(ID, Weapon);
+                            ID++; Weapon = null;
+                        }
+                        break;
+                }
+            Reader.Close();
+            return Array;
+        }
 
         public class Tile
         {
@@ -71,6 +116,13 @@ namespace Shooter2D
             public Animation Animation;
             public byte Frames;
             public float Speed;
+        }
+
+        public class Weapon
+        {
+            public string Name;
+            public double RoundsPerSecond;
+            public Origin Origin;
         }
     }
 }

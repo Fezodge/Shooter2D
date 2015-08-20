@@ -1,0 +1,5 @@
+<Weapons>
+	<Weapon Name="Sniper" RoundsPerSecond=".5">
+		<Origin Point="0,0" />
+	</Weapon>
+</Weapons>
