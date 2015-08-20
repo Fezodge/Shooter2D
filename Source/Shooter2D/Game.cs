@@ -100,7 +100,15 @@ namespace Shooter2D
                 #region MapEditor
                 case States.MapEditor:
                     Point MousePoint = new Point((int)(Mouse.CameraPosition.X / Tile.Width), (int)(Mouse.CameraPosition.Y / Tile.Height));
-                    if (Keyboard.Holding(Keyboard.Keys.Z)) Map.PlaceFore(1, MousePoint.X, MousePoint.Y, null, true);
+                    #region Camera Movement
+                    if (Keyboard.Holding(Keyboard.Keys.W)) Camera.Position.Y -= (float)(Map.Speed.Y * Time.ElapsedGameTime.TotalSeconds);
+                    if (Keyboard.Holding(Keyboard.Keys.S)) Camera.Position.Y += (float)(Map.Speed.Y * Time.ElapsedGameTime.TotalSeconds);
+                    if (Keyboard.Holding(Keyboard.Keys.A)) Camera.Position.X -= (float)(Map.Speed.X * Time.ElapsedGameTime.TotalSeconds);
+                    if (Keyboard.Holding(Keyboard.Keys.D)) Camera.Position.X += (float)(Map.Speed.X * Time.ElapsedGameTime.TotalSeconds);
+                    #endregion
+                    if (Keyboard.Holding(Keyboard.Keys.D1)) Map.ClearFore(MousePoint.X, MousePoint.Y, true);
+                    if (Keyboard.Holding(Keyboard.Keys.D2)) Map.PlaceFore(1, MousePoint.X, MousePoint.Y, null, true);
+                    if (Keyboard.Holding(Keyboard.Keys.D3)) Map.PlaceBack(1, MousePoint.X, MousePoint.Y, true);
                     break;
                 #endregion
 
@@ -199,7 +207,7 @@ namespace Shooter2D
 
                 #region MapEditor
                 case States.MapEditor:
-                    Globe.Batches[0].Begin(Camera.View);
+                    Globe.Batches[0].Begin(SpriteSortMode.BackToFront, Camera.View);
                     Map.Draw();
                     Globe.Batches[0].End();
                     break;
@@ -207,7 +215,7 @@ namespace Shooter2D
 
                 #region Game
                 case States.Game:
-                    Globe.Batches[0].Begin(Camera.View);
+                    Globe.Batches[0].Begin(SpriteSortMode.BackToFront, Camera.View);
                     Map.Draw();
                     for (byte i = 0; i < Players.Length; i++)
                         if (Players[i] != null)
@@ -347,6 +355,26 @@ namespace Shooter2D
                         }
                     }
                     break;
+                case Packets.PlaceFore:
+                    ushort ID = I.ReadUInt16(), x = I.ReadUInt16(), y = I.ReadUInt16(); byte TAngle = I.ReadByte();
+                    Map.PlaceFore(ID, x, y, TAngle);
+                    if (MultiPlayer.Type("Game") == MultiPlayer.Types.Server) MultiPlayer.Send(MultiPlayer.Construct(Packet, ID, x, y, TAngle), I.SenderConnection);
+                    break;
+                case Packets.ClearFore:
+                    x = I.ReadUInt16(); y = I.ReadUInt16();
+                    Map.ClearFore(x, y);
+                    if (MultiPlayer.Type("Game") == MultiPlayer.Types.Server) MultiPlayer.Send(MultiPlayer.Construct(Packet, x, y), I.SenderConnection);
+                    break;
+                case Packets.PlaceBack:
+                    ID = I.ReadUInt16(); x = I.ReadUInt16(); y = I.ReadUInt16();
+                    Map.PlaceBack(ID, x, y);
+                    if (MultiPlayer.Type("Game") == MultiPlayer.Types.Server) MultiPlayer.Send(MultiPlayer.Construct(Packet, ID, x, y), I.SenderConnection);
+                    break;
+                case Packets.ClearBack:
+                    x = I.ReadUInt16(); y = I.ReadUInt16();
+                    Map.ClearBack(x, y);
+                    if (MultiPlayer.Type("Game") == MultiPlayer.Types.Server) MultiPlayer.Send(MultiPlayer.Construct(Packet, x, y), I.SenderConnection);
+                    break;
             }
         }
 
@@ -357,7 +385,9 @@ namespace Shooter2D
             Initial,
             Position,
             PlaceFore,
-            ClearFore
+            ClearFore,
+            PlaceBack,
+            ClearBack
         }
 
         public enum States

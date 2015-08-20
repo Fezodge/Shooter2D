@@ -21,14 +21,14 @@ namespace Shooter2D
             get
             {
                 Mask.Position = Position;
-                /*for (int x = (int)(Position.X / Tile.Width - 1); x <= (Position.X / Tile.Width + 1); x++)
+                for (int x = (int)(Position.X / Tile.Width - 1); x <= (Position.X / Tile.Width + 1); x++)
                     for (int y = (int)(Position.Y / Tile.Height - 1); y <= (Position.Y / Tile.Height + 1); y++)
-                        if (World.InBounds(x, y) && (World.Tiles[x, y].Fore > 0) && Tiles.Fore[World.Tiles[x, y].Fore].Solid)
+                        if (Map.InBounds(x, y) && Map.Tiles[x, y].HasFore && Mod.Fore[Map.Tiles[x, y].Fore].Solid)
                         {
                             Polygon Mask = Polygon.CreateRectangleWithCross(new Vector2(Tile.Width, Tile.Height), Vector2.Zero);
                             Mask.Position = new Vector2(((x * Tile.Width) + (Tile.Width / 2f)), ((y * Tile.Height) + (Tile.Height / 2f)));
                             if (this.Mask.Intersects(Mask)) return true;
-                        }*/
+                        }
                 return false;
             }
         }
@@ -55,6 +55,8 @@ namespace Shooter2D
         public void Load()
         {
             Mask = Polygon.CreateCircle(24, Vector2.Zero);
+            Position = new Vector2((Screen.ViewportWidth / 2f), (Screen.ViewportHeight / 2f));
+            bool T = Collides;
         }
 
         public override void Update(GameTime Time)
@@ -93,9 +95,9 @@ namespace Shooter2D
                     if (OldPosition != Position)
                     {
                     }
-                    Angle = Globe.Lerp(Angle, Globe.Angle(Position, Mouse.CameraPosition), .03f);
+                    Angle = Globe.Lerp(Angle, Globe.Angle(Position, Mouse.CameraPosition), .035f);
                     Camera.Position = Globe.Move(Position, Angle, (Vector2.Distance(Position, Mouse.CameraPosition) / 4));
-                    Camera.Angle = Angle;
+                    //Camera.Angle = Angle;
                 }
                 if (Timers.Tick("Positions") && (MultiPlayer.Type("Game") == MultiPlayer.Types.Client))
                     MultiPlayer.Send("Game", MultiPlayer.Construct("Game", Game.Packets.Position, Position, Angle),

@@ -11,6 +11,7 @@ namespace Shooter2D
     {
         public Tile[,] Tiles;
         public Camera Camera;
+        public Vector2 Speed = new Vector2(240, 240);
 
         public Pathfinder Pathfinder;
         public List<Point>[] Waypoints;
@@ -77,10 +78,28 @@ namespace Shooter2D
             if (!InBounds(x, y) || !Tiles[x, y].HasFore) return false;
             Mod.Tile Tile = Mod.Fore[Tiles[x, y].Fore];
             Pathfinder.SetNode(new Point(x, y), new Pathfinder.Node(true));
-            if (Waypoints[Tile.Waypoint.Value].Contains(new Point(x, y))) Waypoints[Tile.Waypoint.Value].Remove(new Point(x, y));
+            if (Tile.Waypoint.HasValue) Waypoints[Tile.Waypoint.Value].Remove(new Point(x, y));
             Tiles[x, y].Fore = 0;
             Tiles[x, y].Angle = 0;
-            if (Self) MultiPlayer.Send(MultiPlayer.Construct(Game.Packets.ClearFore, (ushort)x, (ushort)y));
+            if (Self && (MultiPlayer.Peer() != null)) MultiPlayer.Send(MultiPlayer.Construct(Game.Packets.ClearFore, (ushort)x, (ushort)y));
+            return true;
+        }
+        public bool PlaceBack(ushort ID, int x, int y, bool Self = false)
+        {
+            if (!InBounds(x, y) || (ID == 0)) return false;
+            Mod.Tile Tile = Mod.Back[ID];
+            Point Point = new Point(x, y);
+            if (Tiles[x, y].Back == ID) return false;
+            Tiles[x, y].Back = ID;
+            if (Self && (MultiPlayer.Peer() != null)) MultiPlayer.Send(MultiPlayer.Construct(Game.Packets.PlaceBack, ID, (ushort)x, (ushort)y));
+            return true;
+        }
+        public bool ClearBack(int x, int y, bool Self = false)
+        {
+            if (!InBounds(x, y) || !Tiles[x, y].HasFore) return false;
+            Mod.Tile Tile = Mod.Back[Tiles[x, y].Back];
+            Tiles[x, y].Back = 0;
+            if (Self && (MultiPlayer.Peer() != null)) MultiPlayer.Send(MultiPlayer.Construct(Game.Packets.ClearBack, (ushort)x, (ushort)y));
             return true;
         }
 
