@@ -82,6 +82,7 @@ namespace Shooter2D
                 #region MainMenu
 
                 case States.MainMenu:
+                    if (Globe.Active)
                     if (Keyboard.Pressed(Keyboard.Keys.F1))
                     {
                         CreateLobby("Server");
@@ -106,21 +107,24 @@ namespace Shooter2D
                 case States.MapEditor:
                     Map.Update(Time);
                     Point MousePoint = new Point((int)(Mouse.CameraPosition.X / Tile.Width), (int)(Mouse.CameraPosition.Y / Tile.Height));
-                    #region Camera Movement
-                    if (Keyboard.Holding(Keyboard.Keys.W)) Camera.Position.Y -= (float)(Map.Speed.Y * Time.ElapsedGameTime.TotalSeconds);
-                    if (Keyboard.Holding(Keyboard.Keys.S)) Camera.Position.Y += (float)(Map.Speed.Y * Time.ElapsedGameTime.TotalSeconds);
-                    if (Keyboard.Holding(Keyboard.Keys.A)) Camera.Position.X -= (float)(Map.Speed.X * Time.ElapsedGameTime.TotalSeconds);
-                    if (Keyboard.Holding(Keyboard.Keys.D)) Camera.Position.X += (float)(Map.Speed.X * Time.ElapsedGameTime.TotalSeconds);
-                    #endregion
-                    bool BackPlace = (Keyboard.Holding(Keyboard.Keys.LeftShift) || Keyboard.Holding(Keyboard.Keys.RightShift));
-                    if (Mouse.ScrolledUp()) if (!BackPlace) { if (EditorForeTile > 1) EditorForeTile--; } else { if (EditorBackTile > 1) EditorBackTile--; }
-                    if (Mouse.ScrolledDown()) if (!BackPlace) { if (EditorForeTile < Mod.Fore.Values.Count) EditorForeTile++; } else { if (EditorBackTile < Mod.Back.Values.Count) EditorBackTile++; }
-                    if (Mouse.Holding(Mouse.Buttons.Left))
-                        if (!BackPlace) Map.PlaceFore(EditorForeTile, MousePoint.X, MousePoint.Y, null, true);
-                        else Map.PlaceBack(EditorBackTile, MousePoint.X, MousePoint.Y, true);
-                    if (Mouse.Holding(Mouse.Buttons.Right))
-                        if (!BackPlace) Map.ClearFore(MousePoint.X, MousePoint.Y, true);
-                        else Map.ClearBack(MousePoint.X, MousePoint.Y, true);
+                    if (Globe.Active)
+                    {
+                        #region Camera Movement
+                        if (Keyboard.Holding(Keyboard.Keys.W)) Camera.Position.Y -= (float)(Map.Speed.Y * Time.ElapsedGameTime.TotalSeconds);
+                        if (Keyboard.Holding(Keyboard.Keys.S)) Camera.Position.Y += (float)(Map.Speed.Y * Time.ElapsedGameTime.TotalSeconds);
+                        if (Keyboard.Holding(Keyboard.Keys.A)) Camera.Position.X -= (float)(Map.Speed.X * Time.ElapsedGameTime.TotalSeconds);
+                        if (Keyboard.Holding(Keyboard.Keys.D)) Camera.Position.X += (float)(Map.Speed.X * Time.ElapsedGameTime.TotalSeconds);
+                        #endregion
+                        bool BackPlace = (Keyboard.Holding(Keyboard.Keys.LeftShift) || Keyboard.Holding(Keyboard.Keys.RightShift));
+                        if (Mouse.ScrolledUp()) if (!BackPlace) { if (EditorForeTile > 1) EditorForeTile--; } else { if (EditorBackTile > 1) EditorBackTile--; }
+                        if (Mouse.ScrolledDown()) if (!BackPlace) { if (EditorForeTile < Mod.Fore.Values.Count) EditorForeTile++; } else { if (EditorBackTile < Mod.Back.Values.Count) EditorBackTile++; }
+                        if (Mouse.Holding(Mouse.Buttons.Left))
+                            if (!BackPlace) Map.PlaceFore(EditorForeTile, MousePoint.X, MousePoint.Y, null, true);
+                            else Map.PlaceBack(EditorBackTile, MousePoint.X, MousePoint.Y, true);
+                        if (Mouse.Holding(Mouse.Buttons.Right))
+                            if (!BackPlace) Map.ClearFore(MousePoint.X, MousePoint.Y, true);
+                            else Map.ClearBack(MousePoint.X, MousePoint.Y, true);
+                    }
                     break;
                 #endregion
 
