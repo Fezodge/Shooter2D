@@ -15,6 +15,8 @@ namespace Shooter2D
     {
         public static float Speed = 1;
         public static States State = States.MainMenu;
+        public static Map Map;
+        private static Camera Camera { get { return Map.Camera; } }
         public static Player Self;
         public static Player[] Players;
         public static string MpName = "Guest";
@@ -28,7 +30,7 @@ namespace Shooter2D
         public Game()
         {
             Globe.GraphicsDeviceManager = new GraphicsDeviceManager(this)
-            {PreferredBackBufferWidth = 960, PreferredBackBufferHeight = 540, SynchronizeWithVerticalRetrace = false};
+            {PreferredBackBufferWidth = 960, PreferredBackBufferHeight = 540};
         }
 
         protected override void LoadContent()
@@ -48,6 +50,7 @@ namespace Shooter2D
 
             #endregion
 
+            Screen.Expand(true);
             Sound.Initialize(256);
             Performance.UpdateFramesPerSecondBuffer = new float[180];
             Performance.DrawFramesPerSecondBuffer = new float[3];
@@ -88,12 +91,12 @@ namespace Shooter2D
                     #region Game
 
                 case States.Game:
+                    Map.Update(Time);
                     for (byte i = 0; i < Players.Length; i++)
                         if (Players[i] != null)
                         {
                             Players[i].Update(Time);
                         }
-
                     if (Timers.Tick("Positions") && (MultiPlayer.Type("Game") == MultiPlayer.Types.Server))
                         foreach (var Player1 in Players)
                             if (Player1 != null && (Player1.Connection != null))
@@ -106,8 +109,7 @@ namespace Shooter2D
                                         O.Write(Player2.Position);
                                         O.Write(Player2.Angle);
                                     }
-                                MultiPlayer.SendTo("Game", O, Player1.Connection, NetDeliveryMethod.UnreliableSequenced,
-                                    1);
+                                MultiPlayer.SendTo("Game", O, Player1.Connection, NetDeliveryMethod.UnreliableSequenced, 1);
                             }
                     break;
 
@@ -178,6 +180,14 @@ namespace Shooter2D
                     break;
 
                 case States.Game:
+                    Globe.Batches[0].Begin(Camera.View);
+                    Map.Draw();
+                    for (byte i = 0; i < Players.Length; i++)
+                        if (Players[i] != null)
+                        {
+                            Players[i].Draw();
+                        }
+                    Globe.Batches[0].End();
                     break;
             }
             Profiler.Stop("Game Draw");
@@ -199,6 +209,7 @@ namespace Shooter2D
         {
             if (MultiPlayer.Type("Game") == null)
             {
+                Map = new Map(50, 50);
                 Players = new Player[10];
                 Self = Player.Add(new Player(Name));
                 MultiPlayer.Start("Game", 6121, Players.Length);

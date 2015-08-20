@@ -64,9 +64,11 @@
     <Compile Include="EzGame\Sound\Sound.cs" />
     <Compile Include="EzGame\Timers.cs" />
     <Compile Include="Game.cs" />
+    <Compile Include="Map.cs" />
     <Compile Include="Player.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Tile.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Lidgren.Network">

@@ -11,6 +11,8 @@ namespace Shooter2D
 {
     public class Player : Object
     {
+        private static Map Map { get { return Game.Map; } }
+        private static Camera Camera { get { return Map.Camera; } }
         private static Player Self => Game.Self;
         private static Player[] Players => Game.Players;
 
@@ -35,7 +37,7 @@ namespace Shooter2D
         public Polygon Mask { get; private set; }
         public string Name;
         public byte Slot;
-        public Vector2 Speed = new Vector2(2.5f, 2.5f);
+        public Vector2 Speed = new Vector2(50, 50);
 
         public Player(string Name)
         {
@@ -52,6 +54,7 @@ namespace Shooter2D
 
         public void Load()
         {
+            Mask = Polygon.CreateCircle(24, Vector2.Zero);
         }
 
         public override void Update(GameTime Time)
@@ -90,6 +93,8 @@ namespace Shooter2D
                     if (OldPosition != Position)
                     {
                     }
+                    Angle = Globe.Lerp(Angle, Globe.Angle(Position, Mouse.CameraPosition), .03f);
+                    Camera.Position = Globe.Move(Position, Angle, (Vector2.Distance(Position, Mouse.CameraPosition) / 4));
                 }
                 if (Timers.Tick("Positions") && (MultiPlayer.Type("Game") == MultiPlayer.Types.Client))
                     MultiPlayer.Send("Game", MultiPlayer.Construct("Game", Game.Packets.Position, Position, Angle),
