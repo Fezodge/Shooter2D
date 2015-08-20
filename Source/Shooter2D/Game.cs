@@ -56,6 +56,9 @@ namespace Shooter2D
             Performance.DrawFramesPerSecondBuffer = new float[3];
             MultiPlayer.Initialize();
             IsMouseVisible = true;
+
+            Mod.Fore = Mod.Load(@".\Content\Fore.xml");
+            Mod.Back = Mod.Load(@".\Content\Back.xml");
         }
 
         protected override void Update(GameTime Time)
@@ -72,7 +75,7 @@ namespace Shooter2D
             Profiler.Start("Game Update");
             switch (State)
             {
-                    #region MainMenu
+                #region MainMenu
 
                 case States.MainMenu:
                     if (Keyboard.Pressed(Keyboard.Keys.F1))
@@ -84,11 +87,24 @@ namespace Shooter2D
                     {
                         MultiPlayer.Connect("Game", "127.0.0.1", 6121, Globe.Version, MpName);
                     }
+                    else if (Keyboard.Pressed(Keyboard.Keys.D3))
+                    {
+                        //Map = new Map(60, 34);
+                        Map = Map.Load(@".\map.dat");
+                        State = States.MapEditor;
+                    }
                     break;
 
-                    #endregion
+                #endregion
 
-                    #region Game
+                #region MapEditor
+                case States.MapEditor:
+                    Point MousePoint = new Point((int)(Mouse.CameraPosition.X / Tile.Width), (int)(Mouse.CameraPosition.Y / Tile.Height));
+                    if (Keyboard.Holding(Keyboard.Keys.Z)) Map.PlaceFore(1, MousePoint.X, MousePoint.Y, null, true);
+                    break;
+                #endregion
+
+                #region Game
 
                 case States.Game:
                     Map.Update(Time);
@@ -175,10 +191,21 @@ namespace Shooter2D
             Profiler.Start("Game Draw");
             switch (State)
             {
+                #region MainMenu
                 case States.MainMenu:
                     Globe.Batches[0].Draw(Textures.Get("cog"), Screen.ViewportBounds);
                     break;
+                #endregion
 
+                #region MapEditor
+                case States.MapEditor:
+                    Globe.Batches[0].Begin(Camera.View);
+                    Map.Draw();
+                    Globe.Batches[0].End();
+                    break;
+                #endregion
+
+                #region Game
                 case States.Game:
                     Globe.Batches[0].Begin(Camera.View);
                     Map.Draw();
@@ -189,6 +216,7 @@ namespace Shooter2D
                         }
                     Globe.Batches[0].End();
                     break;
+                    #endregion
             }
             Profiler.Stop("Game Draw");
 
@@ -201,6 +229,7 @@ namespace Shooter2D
 
         protected override void OnExiting(object sender, EventArgs args)
         {
+            if ((Map != null) && (State == States.MapEditor) && MultiPlayer.IsNullOrServer()) Map.Save(@".\map.dat");
             QuitLobby();
             base.OnExiting(sender, args);
         }
@@ -209,7 +238,7 @@ namespace Shooter2D
         {
             if (MultiPlayer.Type("Game") == null)
             {
-                Map = new Map(50, 50);
+                Map = Map.Load(@".\map.dat");
                 Players = new Player[10];
                 Self = Player.Add(new Player(Name));
                 MultiPlayer.Start("Game", 6121, Players.Length);
@@ -218,15 +247,14 @@ namespace Shooter2D
             }
             return false;
         }
-
         public static void QuitLobby()
         {
             MultiPlayer.Shutdown("Game", string.Empty);
             Players = null;
+            Map = null;
             Timers.Remove("Positions");
             State = States.MainMenu;
         }
-
         public static void Read(Packets Packet, NetIncomingMessage I)
         {
             switch (Packet)
@@ -327,13 +355,16 @@ namespace Shooter2D
             Connection,
             Disconnection,
             Initial,
-            Position
+            Position,
+            PlaceFore,
+            ClearFore
         }
 
         public enum States
         {
             MainMenu,
-            Game
+            Game,
+            MapEditor
         }
     }
 }

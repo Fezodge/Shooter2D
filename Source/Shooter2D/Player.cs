@@ -95,6 +95,7 @@ namespace Shooter2D
                     }
                     Angle = Globe.Lerp(Angle, Globe.Angle(Position, Mouse.CameraPosition), .03f);
                     Camera.Position = Globe.Move(Position, Angle, (Vector2.Distance(Position, Mouse.CameraPosition) / 4));
+                    Camera.Angle = Angle;
                 }
                 if (Timers.Tick("Positions") && (MultiPlayer.Type("Game") == MultiPlayer.Types.Client))
                     MultiPlayer.Send("Game", MultiPlayer.Construct("Game", Game.Packets.Position, Position, Angle),

@@ -32,6 +32,11 @@ namespace EzGame
             }
         }
 
+        public static NetPeer Peer()
+        {
+            if (!string.IsNullOrEmpty(LastName) && (Peers != null) && Peers.ContainsKey(LastName)) return Peers[LastName];
+            return null;
+        }
         public static NetPeer Peer(string Name)
         {
             if (!string.IsNullOrEmpty(Name) && (Peers != null) && Peers.ContainsKey(Name)) return Peers[Name];
