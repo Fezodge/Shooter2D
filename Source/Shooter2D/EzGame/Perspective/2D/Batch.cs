@@ -109,6 +109,18 @@ namespace EzGame.Perspective.Planar
             if (Globe.Batches != null) for (var i = 0; i < Globe.Batches.Length; i++) Globe.Batches[i].End();
         }
 
+        public void Draw(Texture2D Texture, Rectangle Bounds)
+        {
+            if (!Begun) Begin();
+            SpriteBatch.Draw(Texture, Bounds, Color.White);
+        }
+
+        public void Draw(Texture2D Texture, Rectangle Bounds, Color Color)
+        {
+            if (!Begun) Begin();
+            SpriteBatch.Draw(Texture, Bounds, Color);
+        }
+
         public void Draw(Texture2D Texture, Rectangle Bounds, Rectangle? Source, Color Color, float Angle, Origin Origin,
             SpriteEffects Effect = SpriteEffects.None, float Layer = 0)
         {

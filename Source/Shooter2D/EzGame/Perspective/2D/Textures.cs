@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -11,17 +14,18 @@ namespace EzGame.Perspective.Planar
 
         public static Texture2D Get(string Path)
         {
+            Path = Path.Replace('.', '\\');
             Load(Path);
             return Library[Path];
         }
 
-        public static void Load(string Path)
+        public static void Load(string Path, string rootDir = "")
         {
             if (!Library.ContainsKey(Path))
             {
                 try
                 {
-                    Library.Add(Path, Globe.ContentManager.Load<Texture2D>(Path));
+                    Library.Add(Path, Globe.TextureLoader.FromFile(Path));
                 }
                 catch (Exception e)
                 {
@@ -38,6 +42,50 @@ namespace EzGame.Perspective.Planar
                 Globe.ContentManager.Unload();
             }
             else throw new KeyNotFoundException("The texture at \"" + Path + "\" was not found in memory!");
+        }
+
+        /// <summary>
+        /// Load textures for a given path.
+        /// </summary>
+        public static void LoadTextures(string path)
+        {
+            if (Directory.Exists(path))
+            {
+                var files = DirSearch(path, ".png", ".jpeg", ".jpg");
+
+                // For each file name, load it from disk.
+                foreach (var file in files)
+                {
+                    // Remove the full path to return the name of the file
+                    var directoryName = Path.GetDirectoryName(file);
+                    if (directoryName != null)
+                    {
+                        var name = directoryName.Length == path.Length
+                            ? Path.GetFileNameWithoutExtension(file)
+                            : Path.Combine(directoryName.Remove(0, path.Length + 1),
+                                Path.GetFileNameWithoutExtension(file));
+                        Library.Add(name, Globe.TextureLoader.FromFile(file));
+                    }
+                }
+            }
+            else
+                Console.WriteLine($"Directory {path} does not exist.");
+        }
+
+        /// <summary>
+        /// Recursively search a directory for sub folders and files.
+        /// </summary>
+        /// <returns>A list of files within the folder or subfolders.</returns>
+        private static IEnumerable<string> DirSearch(string directory, params string[] extensions)
+        {
+            var dir = new DirectoryInfo(directory);
+
+            var files =
+                dir.GetFiles().Where(f => extensions.Contains(f.Extension)).Select(f => f.FullName).ToList();
+            foreach (var d in dir.GetDirectories())
+                files.AddRange(DirSearch(d.FullName, extensions));
+
+            return files;
         }
 
         /// <summary>

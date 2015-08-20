@@ -1,4 +1,6 @@
 ﻿using System;
+using System.IO;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Windows.Forms;
 using EzGame.Perspective.Planar;
@@ -15,6 +17,8 @@ namespace EzGame
         private static GameServiceContainer Container;
         private static Random SystemRandom;
         private static RandomNumberGenerator SecureRandom;
+        public static string ExecutableDirectory =
+            Path.GetDirectoryName(new Uri(Assembly.GetExecutingAssembly().GetName().CodeBase).LocalPath);
 
         public static Batch[] Batches
         {
@@ -139,6 +143,22 @@ namespace EzGame
                 catch
                 {
                     throw new MissingFieldException("The GraphicsDeviceManager has not (yet) been Globalized!");
+                }
+            }
+            set { Add(value); }
+        }
+
+        public static TextureLoader TextureLoader
+        {
+            get
+            {
+                try
+                {
+                    return Get<TextureLoader>();
+                }
+                catch
+                {
+                    throw new MissingFieldException("The TextureLoader has not (yet) been Globalized!");
                 }
             }
             set { Add(value); }

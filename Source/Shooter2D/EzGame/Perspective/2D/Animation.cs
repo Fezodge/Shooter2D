@@ -46,7 +46,7 @@ namespace EzGame.Perspective.Planar
             for (var i = 0; i < Frames; i++)
             {
                 var Texture = Get(Path + (Path.EndsWith("/") ? string.Empty : "/") + i);
-                var Origin = ((Origins.Length > i) ? Textures.Origin.Center : Origins[i]);
+                var Origin = ((Origins.Length > i) ? EzGame.Perspective.Planar.Textures.Origin.Center : Origins[i]);
                 this.Frames[i] = new Frame(Texture, Origin);
             }
             this.Loop = Loop;

@@ -1,4 +1,5 @@
 ﻿using System.Windows.Forms;
+using Microsoft.Xna.Framework;
 
 namespace EzGame
 {
@@ -42,6 +43,11 @@ namespace EzGame
                 Globe.GraphicsDeviceManager.SynchronizeWithVerticalRetrace = value;
                 Globe.GraphicsDeviceManager.ApplyChanges();
             }
+        }
+
+        public static Rectangle ViewportBounds
+        {
+            get { return Globe.Viewport.Bounds;}
         }
 
         public static int ViewportWidth

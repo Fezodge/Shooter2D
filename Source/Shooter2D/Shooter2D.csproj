@@ -38,7 +38,7 @@
     <ApplicationIcon>Icon.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Lidgren.Network.dll" Condition=" '$(Configuration)' == 'Release' " />
+    <Compile Include="EzGame\Perspective\2D\TextureLoader.cs" />
     <Compile Include="EzGame\Globe.cs" />
     <Compile Include="EzGame\Input\Keyboard.cs" />
     <Compile Include="EzGame\Input\Mouse.cs" />
@@ -79,15 +79,16 @@
     <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Icon.ico" />
   </ItemGroup>
-  <ItemGroup>
-    <MonoGameContentReference Include="Content\Content.mgcb" />
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <Import Project="$(MSBuildExtensionsPath)\MonoGame\v3.0\MonoGame.Content.Builder.targets" />
+  <PropertyGroup>
+    <PreBuildEvent>mkdir "$(TargetDir)Content"
+xcopy /s /i /y "$(SolutionDir)..\Content" "$(TargetDir)Content"</PreBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

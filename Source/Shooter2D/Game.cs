@@ -6,6 +6,8 @@ using EzGame.Input;
 using EzGame.Perspective.Planar;
 using Lidgren.Network;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+using Screen = EzGame.Screen;
 
 namespace Shooter2D
 {
@@ -27,7 +29,6 @@ namespace Shooter2D
         {
             Globe.GraphicsDeviceManager = new GraphicsDeviceManager(this)
             {PreferredBackBufferWidth = 960, PreferredBackBufferHeight = 540, SynchronizeWithVerticalRetrace = false};
-            Content.RootDirectory = "Content";
         }
 
         protected override void LoadContent()
@@ -39,8 +40,11 @@ namespace Shooter2D
             Globe.GameWindow = Window;
             Globe.ContentManager = Content;
             Globe.GraphicsDevice = GraphicsDevice;
+            
             Globe.Viewport = GraphicsDevice.Viewport;
             Globe.GraphicsAdapter = GraphicsDevice.Adapter;
+            Globe.TextureLoader = new TextureLoader(Globe.GraphicsDevice);
+            Textures.LoadTextures(System.IO.Path.Combine(Globe.ExecutableDirectory, "Content"));
 
             #endregion
 
@@ -169,19 +173,12 @@ namespace Shooter2D
             Profiler.Start("Game Draw");
             switch (State)
             {
-                    #region MainMenun
-
                 case States.MainMenu:
+                    Globe.Batches[0].Draw(Textures.Get("cog"), Screen.ViewportBounds);
                     break;
-
-                    #endregion
-
-                    #region Game
 
                 case States.Game:
                     break;
-
-                    #endregion
             }
             Profiler.Stop("Game Draw");
 
