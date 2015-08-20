@@ -72,8 +72,9 @@
     <Compile Include="Tile.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="Lidgren.Network">
-      <HintPath>Lidgren.Network.dll</HintPath>
+    <Reference Include="Lidgren.Network, Version=3.4.0.456, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>C:\Users\Dean\Documents\Visual Studio 2015\Templates\ProjectTemplates\Visual C#\MonoGame\EzGame\Lidgren.Network.dll</HintPath>
     </Reference>
     <Reference Include="MonoGame.Framework">
       <HintPath>$(MSBuildProgramFiles32)\MonoGame\v3.0\Assemblies\Windows\MonoGame.Framework.dll</HintPath>

@@ -44,6 +44,13 @@ namespace EzGame.Perspective.Planar
             else throw new KeyNotFoundException("The texture at \"" + Path + "\" was not found in memory!");
         }
 
+        public static bool Exists(string Path) { return Contains(Path); }
+        public static bool Contains(string Path)
+        {
+            Path = Path.Replace('.', '\\');
+            return Library.ContainsKey(Path);
+        }
+
         /// <summary>
         /// Load textures for a given path.
         /// </summary>

@@ -16,6 +16,7 @@ namespace EzGame
             get
             {
                 var Configuration = new NetPeerConfiguration("Game");
+                Configuration.MaximumTransmissionUnit = (ushort.MaxValue / 8);
                 Configuration.EnableMessageType(NetIncomingMessageType.ConnectionApproval);
                 Configuration.DisableMessageType(NetIncomingMessageType.ConnectionLatencyUpdated);
                 Configuration.DisableMessageType(NetIncomingMessageType.DebugMessage);

@@ -2,6 +2,7 @@
 using System.IO;
 using System.Xml;
 using System.Collections.Generic;
+using EzGame.Perspective.Planar;
 
 namespace Shooter2D
 {
@@ -27,11 +28,19 @@ namespace Shooter2D
                             Tile = new Tile();
                             while (Reader.MoveToNextAttribute())
                                 if (Reader.Name == "ID") ID = Convert.ToUInt16(Reader.Value);
-                                else if (Reader.Name == "Solid") Tile.Solid = Convert.ToBoolean(Reader.Value);
+                                else if (Reader.Name == "Type") Tile.Type = (Tile.Types)Enum.Parse(typeof(Tile.Types), Reader.Value);
                                 else if (Reader.Name == "Border") Tile.Border = Convert.ToBoolean(Reader.Value);
                                 else if (Reader.Name == "ClipToFore") Tile.ClipToFore = Convert.ToBoolean(Reader.Value);
                                 else if (Reader.Name == "Invisible") Tile.Invisible = Convert.ToBoolean(Reader.Value);
                                 else if (Reader.Name == "Waypoint") Tile.Waypoint = Convert.ToByte(Reader.Value);
+                                else if (Reader.Name == "Frames") Tile.Frames = Convert.ToByte(Reader.Value);
+                                else if (Reader.Name == "Speed") Tile.Speed = Convert.ToSingle(Reader.Value);
+                        }
+                        if (Reader.Name == "Animation")
+                        {
+                            while (Reader.MoveToNextAttribute())
+                                if (Reader.Name == "Frames") Tile.Frames = Convert.ToByte(Reader.Value);
+                                else if (Reader.Name == "Speed") Tile.Speed = Convert.ToSingle(Reader.Value);
                         }
                         if (End)
                         {
@@ -53,8 +62,15 @@ namespace Shooter2D
 
         public class Tile
         {
-            public bool Solid, Border, ClipToFore, Invisible;
+            public enum Types { Floor, Platform, Wall }
+            public Types Type = Types.Floor;
+
+            public bool Border, ClipToFore, Invisible;
             public byte? Waypoint;
+
+            public Animation Animation;
+            public byte Frames;
+            public float Speed;
         }
     }
 }

@@ -27,6 +27,10 @@ namespace Shooter2D
 
         public void Update(GameTime Time)
         {
+            for (int x = (int)((Camera.X - (Screen.ViewportWidth / 2f)) / Tile.Width); x <= (int)((Camera.X + (Screen.ViewportWidth / 2f)) / Tile.Width); x++)
+                for (int y = (int)((Camera.Y - (Screen.ViewportHeight / 2f)) / Tile.Height); y <= (int)((Camera.Y + (Screen.ViewportHeight / 2f)) / Tile.Height); y++)
+                    if (InBounds(x, y))
+                        Tiles[x, y].Update(Time);
         }
 
         public void Draw() { Draw(Globe.Batches[0]); }
@@ -51,7 +55,7 @@ namespace Shooter2D
             if (!InBounds(x, y) || (ID == 0)) return false;
             Mod.Tile Tile = Mod.Fore[ID];
             Point Point = new Point(x, y);
-            if (Tile.Solid) Pathfinder.SetNode(Point, new Pathfinder.Node(false)); else Pathfinder.SetNode(Point, new Pathfinder.Node(true));
+            if (Tile.Type == (Mod.Tile.Types.Platform | Mod.Tile.Types.Wall)) Pathfinder.SetNode(Point, new Pathfinder.Node(false)); else Pathfinder.SetNode(Point, new Pathfinder.Node(true));
             if (Tile.Waypoint.HasValue && !Waypoints[Tile.Waypoint.Value].Contains(Point)) Waypoints[Tile.Waypoint.Value].Add(Point);
             if (!Angle.HasValue)
             {
@@ -59,15 +63,17 @@ namespace Shooter2D
                 {
                     Angle = 128;
                     ushort RFore = this.RFore(Point), BFore = this.BFore(Point), LFore = this.LFore(Point), AFore = this.AFore(Point);
-                    if ((RFore > 0) && Mod.Fore[RFore].Solid) Angle = 0;
-                    else if ((BFore > 0) && Mod.Fore[BFore].Solid) Angle = 32;
-                    else if ((LFore > 0) && Mod.Fore[LFore].Solid) Angle = 64;
-                    else if ((AFore > 0) && Mod.Fore[AFore].Solid) Angle = 96;
+                    if ((RFore > 0) && Mod.Fore[RFore].Type == (Mod.Tile.Types.Platform | Mod.Tile.Types.Wall)) Angle = 0;
+                    else if ((BFore > 0) && Mod.Fore[BFore].Type == (Mod.Tile.Types.Platform | Mod.Tile.Types.Wall)) Angle = 32;
+                    else if ((LFore > 0) && Mod.Fore[LFore].Type == (Mod.Tile.Types.Platform | Mod.Tile.Types.Wall)) Angle = 64;
+                    else if ((AFore > 0) && Mod.Fore[AFore].Type == (Mod.Tile.Types.Platform | Mod.Tile.Types.Wall)) Angle = 96;
                     if (Angle.Value == 128) return false;
                 }
                 else Angle = 0;
             }
             if ((Tiles[x, y].Fore == ID) && (Tiles[x, y].Angle == Angle.Value)) return false;
+            if (Tile.Frames > 0) Tiles[x, y].ForeAnimation = new Animation(("Tiles.Fore." + ID + "-"), Tile.Frames, true, Tile.Speed);
+            else Tiles[x, y].ForeAnimation = null;
             Tiles[x, y].Fore = ID;
             Tiles[x, y].Angle = Angle.Value;
             if (Self && (MultiPlayer.Peer() != null)) MultiPlayer.Send(MultiPlayer.Construct(Game.Packets.PlaceFore, ID, (ushort)x, (ushort)y, Angle));
@@ -81,6 +87,7 @@ namespace Shooter2D
             if (Tile.Waypoint.HasValue) Waypoints[Tile.Waypoint.Value].Remove(new Point(x, y));
             Tiles[x, y].Fore = 0;
             Tiles[x, y].Angle = 0;
+            Tiles[x, y].ForeAnimation = null;
             if (Self && (MultiPlayer.Peer() != null)) MultiPlayer.Send(MultiPlayer.Construct(Game.Packets.ClearFore, (ushort)x, (ushort)y));
             return true;
         }
@@ -90,15 +97,18 @@ namespace Shooter2D
             Mod.Tile Tile = Mod.Back[ID];
             Point Point = new Point(x, y);
             if (Tiles[x, y].Back == ID) return false;
+            if (Tile.Frames > 0) Tiles[x, y].BackAnimation = new Animation(("Tiles.Back." + ID + "-"), Tile.Frames, true, Tile.Speed);
+            else Tiles[x, y].BackAnimation = null;
             Tiles[x, y].Back = ID;
             if (Self && (MultiPlayer.Peer() != null)) MultiPlayer.Send(MultiPlayer.Construct(Game.Packets.PlaceBack, ID, (ushort)x, (ushort)y));
             return true;
         }
         public bool ClearBack(int x, int y, bool Self = false)
         {
-            if (!InBounds(x, y) || !Tiles[x, y].HasFore) return false;
+            if (!InBounds(x, y) || !Tiles[x, y].HasBack) return false;
             Mod.Tile Tile = Mod.Back[Tiles[x, y].Back];
             Tiles[x, y].Back = 0;
+            Tiles[x, y].BackAnimation = null;
             if (Self && (MultiPlayer.Peer() != null)) MultiPlayer.Send(MultiPlayer.Construct(Game.Packets.ClearBack, (ushort)x, (ushort)y));
             return true;
         }

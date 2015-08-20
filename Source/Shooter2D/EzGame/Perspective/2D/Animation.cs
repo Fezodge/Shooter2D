@@ -33,7 +33,7 @@ namespace EzGame.Perspective.Planar
             this.Frames = new Frame[Frames];
             for (var i = 0; i < Frames; i++)
             {
-                var Texture = Get(Path + (Path.EndsWith("/") ? string.Empty : "/") + i);
+                var Texture = Get(Path + ((Path.EndsWith("/") || Path.EndsWith("-")) ? string.Empty : "/") + i);
                 this.Frames[i] = new Frame(Texture, Textures.Origin.Center);
             }
             this.Loop = Loop;
@@ -45,7 +45,7 @@ namespace EzGame.Perspective.Planar
             this.Frames = new Frame[Frames];
             for (var i = 0; i < Frames; i++)
             {
-                var Texture = Get(Path + (Path.EndsWith("/") ? string.Empty : "/") + i);
+                var Texture = Get(Path + ((Path.EndsWith("/") || Path.EndsWith("-")) ? string.Empty : "/") + i);
                 var Origin = ((Origins.Length > i) ? EzGame.Perspective.Planar.Textures.Origin.Center : Origins[i]);
                 this.Frames[i] = new Frame(Texture, Origin);
             }

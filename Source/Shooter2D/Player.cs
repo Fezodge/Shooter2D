@@ -21,9 +21,10 @@ namespace Shooter2D
             get
             {
                 Mask.Position = Position;
+                if (Map != null)
                 for (int x = (int)(Position.X / Tile.Width - 1); x <= (Position.X / Tile.Width + 1); x++)
                     for (int y = (int)(Position.Y / Tile.Height - 1); y <= (Position.Y / Tile.Height + 1); y++)
-                        if (Map.InBounds(x, y) && Map.Tiles[x, y].HasFore && Mod.Fore[Map.Tiles[x, y].Fore].Solid)
+                        if (Map.InBounds(x, y) && Map.Tiles[x, y].HasFore && (Mod.Fore[Map.Tiles[x, y].Fore].Type == (Mod.Tile.Types.Platform | Mod.Tile.Types.Wall)))
                         {
                             Polygon Mask = Polygon.CreateRectangleWithCross(new Vector2(Tile.Width, Tile.Height), Vector2.Zero);
                             Mask.Position = new Vector2(((x * Tile.Width) + (Tile.Width / 2f)), ((y * Tile.Height) + (Tile.Height / 2f)));

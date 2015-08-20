@@ -8,6 +8,7 @@ using Lidgren.Network;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Screen = EzGame.Screen;
+using static EzGame.Perspective.Planar.Textures;
 
 namespace Shooter2D
 {
@@ -21,6 +22,8 @@ namespace Shooter2D
         public static Player[] Players;
         public static string MpName = "Guest";
 
+        public static ushort EditorForeTile = 1, EditorBackTile = 1;
+
         public static ulong Version
         {
             get { return Globe.Version; }
@@ -30,7 +33,8 @@ namespace Shooter2D
         public Game()
         {
             Globe.GraphicsDeviceManager = new GraphicsDeviceManager(this)
-            {PreferredBackBufferWidth = 960, PreferredBackBufferHeight = 540};
+            {PreferredBackBufferWidth = 1280, PreferredBackBufferHeight = 720};
+            //AppDomain.CurrentDomain.UnhandledException += (sender, args) => MessageBox.Show(((Exception)args.ExceptionObject).ToString());
         }
 
         protected override void LoadContent()
@@ -85,20 +89,22 @@ namespace Shooter2D
                     }
                     else if (Keyboard.Pressed(Keyboard.Keys.F2))
                     {
-                        MultiPlayer.Connect("Game", "127.0.0.1", 6121, Globe.Version, MpName);
+                        MultiPlayer.Connect("Game", "71.3.34.68", 6121, Globe.Version, MpName);
                     }
-                    else if (Keyboard.Pressed(Keyboard.Keys.D3))
+                    else if (Keyboard.Pressed(Keyboard.Keys.F3))
                     {
-                        //Map = new Map(60, 34);
-                        Map = Map.Load(@".\map.dat");
+                        CreateLobby("Server");
                         State = States.MapEditor;
                     }
                     break;
 
                 #endregion
 
+                case States.RequestMap: if (MultiPlayer.Type() == MultiPlayer.Types.Client) { MultiPlayer.Send(MultiPlayer.Construct(Packets.RequestMap)); State = States.SyncingMap; } break;
+
                 #region MapEditor
                 case States.MapEditor:
+                    Map.Update(Time);
                     Point MousePoint = new Point((int)(Mouse.CameraPosition.X / Tile.Width), (int)(Mouse.CameraPosition.Y / Tile.Height));
                     #region Camera Movement
                     if (Keyboard.Holding(Keyboard.Keys.W)) Camera.Position.Y -= (float)(Map.Speed.Y * Time.ElapsedGameTime.TotalSeconds);
@@ -106,9 +112,15 @@ namespace Shooter2D
                     if (Keyboard.Holding(Keyboard.Keys.A)) Camera.Position.X -= (float)(Map.Speed.X * Time.ElapsedGameTime.TotalSeconds);
                     if (Keyboard.Holding(Keyboard.Keys.D)) Camera.Position.X += (float)(Map.Speed.X * Time.ElapsedGameTime.TotalSeconds);
                     #endregion
-                    if (Keyboard.Holding(Keyboard.Keys.D1)) Map.ClearFore(MousePoint.X, MousePoint.Y, true);
-                    if (Keyboard.Holding(Keyboard.Keys.D2)) Map.PlaceFore(1, MousePoint.X, MousePoint.Y, null, true);
-                    if (Keyboard.Holding(Keyboard.Keys.D3)) Map.PlaceBack(1, MousePoint.X, MousePoint.Y, true);
+                    bool BackPlace = (Keyboard.Holding(Keyboard.Keys.LeftShift) || Keyboard.Holding(Keyboard.Keys.RightShift));
+                    if (Mouse.ScrolledUp()) if (!BackPlace) { if (EditorForeTile > 1) EditorForeTile--; } else { if (EditorBackTile > 1) EditorBackTile--; }
+                    if (Mouse.ScrolledDown()) if (!BackPlace) { if (EditorForeTile < Mod.Fore.Values.Count) EditorForeTile++; } else { if (EditorBackTile < Mod.Back.Values.Count) EditorBackTile++; }
+                    if (Mouse.Holding(Mouse.Buttons.Left))
+                        if (!BackPlace) Map.PlaceFore(EditorForeTile, MousePoint.X, MousePoint.Y, null, true);
+                        else Map.PlaceBack(EditorBackTile, MousePoint.X, MousePoint.Y, true);
+                    if (Mouse.Holding(Mouse.Buttons.Right))
+                        if (!BackPlace) Map.ClearFore(MousePoint.X, MousePoint.Y, true);
+                        else Map.ClearBack(MousePoint.X, MousePoint.Y, true);
                     break;
                 #endregion
 
@@ -210,6 +222,41 @@ namespace Shooter2D
                     Globe.Batches[0].Begin(SpriteSortMode.BackToFront, Camera.View);
                     Map.Draw();
                     Globe.Batches[0].End();
+                    Globe.Batches[0].DrawRectangle(new Rectangle(16, (int)((Screen.ViewportHeight / 2f) - (11 * Tile.Height)), 52, (22 * Tile.Height)), (Color.Gray * .75f), (Color.Black * .75f));
+                    Vector2 UIPos = new Vector2(32, 0);
+                    for (int i = -10; i <= 20; i++)
+                    {
+                        float Opacity = (1 - (Math.Abs(i) * .15f));
+                        UIPos.Y = ((Screen.ViewportHeight / 2f) + (i * (Tile.Height + 5)));
+                        ushort ID = (ushort)Math.Max(0, Math.Min(ushort.MaxValue, (EditorForeTile + i)));
+                        if ((ID > 0) && (ID <= Mod.Fore.Values.Count))
+                        {
+                            if (Textures.Exists("Tiles.Fore." + ID)) Textures.Draw(("Tiles.Fore." + ID), UIPos, null, (Color.White * Opacity), 0, Origin.Center, 1);
+                            if (Mod.Fore[ID].Frames > 0)
+                            {
+                                if (Mod.Fore[ID].Animation == null) Mod.Fore[ID].Animation = new Animation(("Tiles.Fore." + ID + "-"), Mod.Fore[ID].Frames, true, Mod.Fore[ID].Speed);
+                                else Mod.Fore[ID].Animation.Update(Time);
+                                Textures.Draw(Mod.Fore[ID].Animation.Texture(), UIPos, null, (Color.White * Opacity), 0, Origin.Center, 1);
+                            }
+                        }
+                    }
+                    UIPos = new Vector2(52, 0);
+                    for (int i = -10; i <= 20; i++)
+                    {
+                        float Opacity = (1 - (Math.Abs(i) * .15f));
+                        UIPos.Y = ((Screen.ViewportHeight / 2f) + (i * (Tile.Height + 5)));
+                        ushort ID = (ushort)Math.Max(0, Math.Min(ushort.MaxValue, (EditorBackTile + i)));
+                        if ((ID > 0) && (ID <= Mod.Back.Values.Count))
+                        {
+                            if (Textures.Exists("Tiles.Back." + ID)) Textures.Draw(("Tiles.Back." + ID), UIPos, null, (Color.White * Opacity), 0, Origin.Center, 1);
+                            if (Mod.Back[ID].Frames > 0)
+                            {
+                                if (Mod.Back[ID].Animation == null) Mod.Back[ID].Animation = new Animation(("Tiles.Back." + ID + "-"), Mod.Back[ID].Frames, true, Mod.Back[ID].Speed);
+                                else Mod.Back[ID].Animation.Update(Time);
+                                Textures.Draw(Mod.Back[ID].Animation.Texture(), UIPos, null, (Color.White * Opacity), 0, Origin.Center, 1);
+                            }
+                        }
+                    }
                     break;
                 #endregion
 
@@ -246,6 +293,7 @@ namespace Shooter2D
         {
             if (MultiPlayer.Type("Game") == null)
             {
+                //Map = new Map(80, 45);
                 Map = Map.Load(@".\map.dat");
                 Players = new Player[10];
                 Self = Player.Add(new Player(Name));
@@ -262,6 +310,34 @@ namespace Shooter2D
             Map = null;
             Timers.Remove("Positions");
             State = States.MainMenu;
+        }
+        public static List<object> GetSyncedMap
+        {
+            get
+            {
+                List<object> Details = new List<object>();
+                Details.Add(Map.Tiles.GetLength(0)); Details.Add(Map.Tiles.GetLength(1));
+                for (int x = 0; x < Map.Tiles.GetLength(0); x++)
+                    for (int y = 0; y < Map.Tiles.GetLength(1); y++)
+                    {
+                        Details.Add(Map.Tiles[x, y].Fore);
+                        Details.Add(Map.Tiles[x, y].Back);
+                        if (Map.Tiles[x, y].Fore > 0) Details.Add(Map.Tiles[x, y].Angle);
+                    }
+                return Details;
+            }
+        }
+        public static Map ReadSyncedMap(NetIncomingMessage I)
+        {
+            Map Map = new Map(I.ReadInt32(), I.ReadInt32());
+            for (int x = 0; x < Map.Tiles.GetLength(0); x++)
+                for (int y = 0; y < Map.Tiles.GetLength(1); y++)
+                {
+                    Map.Tiles[x, y].Fore = I.ReadUInt16();
+                    Map.Tiles[x, y].Back = I.ReadUInt16();
+                    if (Map.Tiles[x, y].Fore > 0) Map.Tiles[x, y].Angle = I.ReadByte();
+                }
+            return Map;
         }
         public static void Read(Packets Packet, NetIncomingMessage I)
         {
@@ -287,14 +363,12 @@ namespace Shooter2D
                                         Details.Add(Players[i].Name);
                                     }
                                     else Details.Add(false);
-                                I.SenderConnection.Approve(MultiPlayer.Construct("Game", Packets.Initial,
-                                    (byte) Players.Length, Connector.Slot, Details));
+                                I.SenderConnection.Approve(MultiPlayer.Construct("Game", Packets.Initial, (byte)Players.Length, Connector.Slot, Details));
                             }
                             else I.SenderConnection.Deny("Full");
                         }
                         else
-                            I.SenderConnection.Deny("Version indifference, Client: " + ClientVersion + " - Server: " +
-                                                    Globe.Version);
+                            I.SenderConnection.Deny("Version indifference, Client: " + ClientVersion + " - Server: " + Globe.Version);
                     }
                     else if (MultiPlayer.Type("Game") == MultiPlayer.Types.Client)
                     {
@@ -321,9 +395,19 @@ namespace Shooter2D
                             {
                                 Players[i] = new Player(i, I.ReadString());
                             }
+                        State = States.RequestMap;
                         Timers.Add("Positions", (1/30d));
-                        State = States.Game;
                     }
+                    break;
+                case Packets.RequestMap:
+                    if (MultiPlayer.Type() == MultiPlayer.Types.Server)
+                    {
+                        List<object> Details = new List<object>();
+                        Details.AddRange(GetSyncedMap);
+                        Details.Add((byte)State);
+                        MultiPlayer.SendTo(MultiPlayer.Construct(Packet, Details), I.SenderConnection);
+                    }
+                    else if (MultiPlayer.Type() == MultiPlayer.Types.Client) { Map = ReadSyncedMap(I); State = (States)I.ReadByte(); }
                     break;
                 case Packets.Position:
                     var Sender = ((MultiPlayer.Type("Game") == MultiPlayer.Types.Server)
@@ -383,6 +467,7 @@ namespace Shooter2D
             Connection,
             Disconnection,
             Initial,
+            RequestMap,
             Position,
             PlaceFore,
             ClearFore,
@@ -394,7 +479,9 @@ namespace Shooter2D
         {
             MainMenu,
             Game,
-            MapEditor
+            MapEditor,
+            RequestMap,
+            SyncingMap
         }
     }
 }
