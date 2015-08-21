@@ -22,9 +22,17 @@ namespace Shooter2D
         public static Player[] Players;
         
         public static string MpName = "Guest";
-        public enum Types { Deathmatch, TeamDeathmatch, TeamStandard }
-        public static Types Type = Types.TeamStandard;
-        public static double RespawnTimer = 5;
+
+        public enum GameTypes { Deathmatch, TeamDeathmatch, TeamStandard }
+        public static GameTypes GameType = GameTypes.TeamStandard;
+        public static double RespawnTimer = 5, RoundTimer;
+        public enum VictoryStates { Draw, Team, Neutral }
+        public static byte RoundEndMusicIndex;
+        public static ushort? RoundEndMusicChannel;
+
+        public byte TeamCount(byte Team) { byte Count = 0; for (byte i = 0; i < Players.Length; i++) if ((Players[i] != null) && (Players[i].Team == Team)) Count++; return Count; }
+        public byte AliveCount(byte Team) { byte Count = 0; for (byte i = 0; i < Players.Length; i++) if ((Players[i] != null) && (Players[i].Team == Team) && !Players[i].Dead) Count++; return Count; }
+        public byte DeadCount(byte Team) { byte Count = 0; for (byte i = 0; i < Players.Length; i++) if ((Players[i] != null) && (Players[i].Team == Team) && Players[i].Dead) Count++; return Count; }
 
         public static byte EditorForeTile = 1, EditorBackTile = 1;
 
@@ -145,20 +153,31 @@ namespace Shooter2D
                         {
                             Players[i].Update(Time);
                         }
-                    if (Timers.Tick("Positions") && (MultiPlayer.Type("Game") == MultiPlayer.Types.Server))
-                        foreach (var Player1 in Players)
-                            if (Player1 != null && (Player1.Connection != null))
+                    if (MultiPlayer.Type("Game") == MultiPlayer.Types.Server)
+                    {
+                        if (Timers.Tick("Positions"))
+                            foreach (var Player1 in Players)
+                                if (Player1 != null && (Player1.Connection != null))
+                                {
+                                    var O = MultiPlayer.Construct("Game", Packets.Position);
+                                    foreach (var Player2 in Players)
+                                        if ((Player2 != Player1) && (Player2 != null) && !Player2.Dead)
+                                        {
+                                            O.Write(Player2.Slot);
+                                            O.Write(Player2.Position);
+                                            O.Write(Player2.Angle);
+                                        }
+                                    MultiPlayer.SendTo("Game", O, Player1.Connection, NetDeliveryMethod.UnreliableSequenced, 1);
+                                }
+                        if (GameType == GameTypes.TeamStandard)
+                        {
+                            if ((DeadCount(1) == TeamCount(1)) && (DeadCount(2) == TeamCount(2)))
                             {
-                                var O = MultiPlayer.Construct("Game", Packets.Position);
-                                foreach (var Player2 in Players)
-                                    if ((Player2 != Player1) && (Player2 != null))
-                                    {
-                                        O.Write(Player2.Slot);
-                                        O.Write(Player2.Position);
-                                        O.Write(Player2.Angle);
-                                    }
-                                MultiPlayer.SendTo("Game", O, Player1.Connection, NetDeliveryMethod.UnreliableSequenced, 1);
+                                RoundEndMusicIndex = 0;
+                                MultiPlayer.Send(MultiPlayer.Construct(Packets.EndRound, (byte)VictoryStates.Draw, RoundEndMusicIndex));
                             }
+                        }
+                    }
                     break;
 
                     #endregion
@@ -238,7 +257,7 @@ namespace Shooter2D
                     Vector2 UIPos = new Vector2(32, 0);
                     for (int i = -10; i <= 20; i++)
                     {
-                        float Opacity = (1 - (Math.Abs(i) * .15f));
+                        float Opacity = (1 - (Math.Abs(i) * .05f));
                         UIPos.Y = ((Screen.ViewportHeight / 2f) + (i * (Tile.Height + 5)));
                         ushort ID = (ushort)Math.Max(0, Math.Min(ushort.MaxValue, (EditorForeTile + i)));
                         if ((ID > 0) && (ID <= Mod.Fore.Values.Count))
@@ -246,7 +265,6 @@ namespace Shooter2D
                             if (Textures.Exists("Tiles.Fore." + ID)) Textures.Draw(("Tiles.Fore." + ID), UIPos, null, (Color.White * Opacity), 0, Origin.Center, 1);
                             if (Mod.Fore[ID].Frames > 0)
                             {
-                                //Console.WriteLine(Mod.Fore[ID].Speed);
                                 if (Mod.Fore[ID].Animation == null) Mod.Fore[ID].Animation = new Animation(("Tiles.Fore." + ID + "-"), Mod.Fore[ID].Frames, true, Mod.Fore[ID].Speed);
                                 else Mod.Fore[ID].Animation.Update(Time);
                                 Textures.Draw(Mod.Fore[ID].Animation.Texture(), UIPos, null, (Color.White * Opacity), 0, Origin.Center, 1);
@@ -256,7 +274,7 @@ namespace Shooter2D
                     UIPos = new Vector2(52, 0);
                     for (int i = -10; i <= 20; i++)
                     {
-                        float Opacity = (1 - (Math.Abs(i) * .15f));
+                        float Opacity = (1 - (Math.Abs(i) * .05f));
                         UIPos.Y = ((Screen.ViewportHeight / 2f) + (i * (Tile.Height + 5)));
                         ushort ID = (ushort)Math.Max(0, Math.Min(ushort.MaxValue, (EditorBackTile + i)));
                         if ((ID > 0) && (ID <= Mod.Back.Values.Count))
@@ -369,7 +387,7 @@ namespace Shooter2D
                                     MultiPlayer.Construct("Game", Packet, Connector.Slot, Connector.Name),
                                     I.SenderConnection);
                                 var Details = new List<object>();
-                                Details.Add((byte)Type); Details.Add(RespawnTimer);
+                                Details.Add((byte)GameType); Details.Add(RespawnTimer);
                                 for (byte i = 0; i < Players.Length; i++)
                                     if ((Players[i] != null) && (Players[i] != Connector))
                                     {
@@ -404,7 +422,7 @@ namespace Shooter2D
                     {
                         Players = new Player[I.ReadByte()];
                         Self = Player.Set(I.ReadByte(), new Player(MpName));
-                        Type = (Types)I.ReadByte(); RespawnTimer = I.ReadDouble();
+                        GameType = (GameTypes)I.ReadByte(); RespawnTimer = I.ReadDouble();
                         for (byte i = 0; i < Players.Length; i++)
                             if (I.ReadBoolean())
                             {

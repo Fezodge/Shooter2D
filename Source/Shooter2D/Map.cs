@@ -18,7 +18,7 @@ namespace Shooter2D
         public Vector2 Speed = new Vector2(240, 240);
 
         public Pathfinder Pathfinder;
-        public List<Point>[] Waypoints;
+        public List<Point>[] Waypoints, Spawns;
 
         public List<Line> Bullets;
 
@@ -30,13 +30,15 @@ namespace Shooter2D
             Pathfinder = new Pathfinder(Width, Height);
             Waypoints = new List<Point>[3];
             for (int i = 0; i < Waypoints.Length; i++) Waypoints[i] = new List<Point>();
+            Spawns = new List<Point>[3];
+            for (int i = 0; i < Spawns.Length; i++) Spawns[i] = new List<Point>();
             Bullets = new List<Line>();
         }
 
         public void Update(GameTime Time)
         {
-            for (int x = (int)((Camera.X - (Screen.ViewportWidth / 2f)) / Tile.Width); x <= (int)((Camera.X + (Screen.ViewportWidth / 2f)) / Tile.Width); x++)
-                for (int y = (int)((Camera.Y - (Screen.ViewportHeight / 2f)) / Tile.Height); y <= (int)((Camera.Y + (Screen.ViewportHeight / 2f)) / Tile.Height); y++)
+            for (int x = (int)((Camera.X - (Screen.ViewportWidth / 2f)) / Tile.Width - 1); x <= (int)((Camera.X + (Screen.ViewportWidth / 2f)) / Tile.Width + 1); x++)
+                for (int y = (int)((Camera.Y - (Screen.ViewportHeight / 2f)) / Tile.Height - 1); y <= (int)((Camera.Y + (Screen.ViewportHeight / 2f)) / Tile.Height + 1); y++)
                     if (InBounds(x, y))
                         Tiles[x, y].Update(Time);
         }
@@ -45,8 +47,8 @@ namespace Shooter2D
         public void Draw(Batch Batch)
         {
             float LayerOffset = 0;
-            for (int y = (int)((Camera.Y - (Screen.ViewportHeight / 2f)) / Tile.Height); y <= (int)((Camera.Y + (Screen.ViewportHeight / 2f)) / Tile.Height); y++)
-                for (int x = (int)((Camera.X - (Screen.ViewportWidth / 2f)) / Tile.Width); x <= (int)((Camera.X + (Screen.ViewportWidth / 2f)) / Tile.Width); x++)
+            for (int y = (int)((Camera.Y - (Screen.ViewportHeight / 2f)) / Tile.Height - 1); y <= (int)((Camera.Y + (Screen.ViewportHeight / 2f)) / Tile.Height + 1); y++)
+                for (int x = (int)((Camera.X - (Screen.ViewportWidth / 2f)) / Tile.Width - 1); x <= (int)((Camera.X + (Screen.ViewportWidth / 2f)) / Tile.Width + 1); x++)
                     if (InBounds(x, y))
                     {
                         Tile Tile = Tiles[x, y];
@@ -68,6 +70,7 @@ namespace Shooter2D
             Point Point = new Point(x, y);
             if (Tile.Type == (Mod.Tile.Types.Platform | Mod.Tile.Types.Wall)) Pathfinder.SetNode(Point, new Pathfinder.Node(false)); else Pathfinder.SetNode(Point, new Pathfinder.Node(true));
             if (Tile.Waypoint.HasValue && !Waypoints[Tile.Waypoint.Value].Contains(Point)) Waypoints[Tile.Waypoint.Value].Add(Point);
+            if (Tile.Spawn.HasValue && !Spawns[Tile.Spawn.Value].Contains(Point)) Spawns[Tile.Spawn.Value].Add(Point);
             if (!Angle.HasValue)
             {
                 if (Tile.ClipToFore)
@@ -94,8 +97,10 @@ namespace Shooter2D
         {
             if (!InBounds(x, y) || !Tiles[x, y].HasFore) return false;
             Mod.Tile Tile = Mod.Fore[Tiles[x, y].Fore];
-            Pathfinder.SetNode(new Point(x, y), new Pathfinder.Node(true));
-            if (Tile.Waypoint.HasValue) Waypoints[Tile.Waypoint.Value].Remove(new Point(x, y));
+            Point Point = new Point(x, y);
+            Pathfinder.SetNode(Point, new Pathfinder.Node(true));
+            if (Tile.Waypoint.HasValue) Waypoints[Tile.Waypoint.Value].Remove(Point);
+            if (Tile.Spawn.HasValue) Spawns[Tile.Spawn.Value].Remove(Point);
             Tiles[x, y].Fore = 0;
             Tiles[x, y].Angle = 0;
             Tiles[x, y].ForeAnimation = null;
@@ -130,6 +135,9 @@ namespace Shooter2D
             return ((x < (int)((Camera.X - (Screen.ViewportWidth / 2f)) / Tile.Width - Offset)) || (y < (int)((Camera.Y - (Screen.ViewportHeight / 2f)) / Tile.Height - Offset)) ||
                 (x >= (int)((Camera.X + (Screen.ViewportWidth / 2f)) / Tile.Width + Offset)) || (y >= (int)((Camera.Y + (Screen.ViewportHeight / 2f)) / Tile.Height + Offset)));
         }
+
+        public Point GetWaypoint(byte Team) { return Waypoints[Team][Globe.Random(Waypoints[Team].Count - 1)]; }
+        public Point GetSpawn(byte Team) { return Spawns[Team][Globe.Random(Spawns[Team].Count - 1)]; }
 
         public void Save(string Path)
         {

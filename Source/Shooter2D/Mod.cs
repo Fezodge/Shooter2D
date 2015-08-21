@@ -125,7 +125,7 @@ namespace Shooter2D
             public Types Type = Types.Floor;
 
             public bool Border, ClipToFore, Invisible;
-            public byte? Waypoint;
+            public byte? Waypoint, Spawn;
 
             public Animation Animation;
             public byte Frames;
