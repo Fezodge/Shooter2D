@@ -11,7 +11,7 @@ namespace Shooter2D
 
         public const byte Width = 16, Height = 16;
 
-        public ushort Fore, Back;
+        public byte Fore, Back;
         public byte Angle;
         public Animation ForeAnimation, BackAnimation;
 

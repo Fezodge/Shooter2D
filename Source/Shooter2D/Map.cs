@@ -59,7 +59,7 @@ namespace Shooter2D
         public ushort RFore(Point Point) { Point = (Point + new Point(1, 0)); if (InBounds(Point.X, Point.Y)) return Tiles[Point.X, Point.Y].Fore; else return 0; }
         public ushort BFore(Point Point) { Point = (Point + new Point(0, 1)); if (InBounds(Point.X, Point.Y)) return Tiles[Point.X, Point.Y].Fore; else return 0; }
         public ushort LFore(Point Point) { Point = (Point + new Point(-1, 0)); if (InBounds(Point.X, Point.Y)) return Tiles[Point.X, Point.Y].Fore; else return 0; }
-        public bool PlaceFore(ushort ID, int x, int y, byte? Angle = null, bool Self = false)
+        public bool PlaceFore(byte ID, int x, int y, byte? Angle = null, bool Self = false)
         {
             if (!InBounds(x, y) || (ID == 0)) return false;
             Mod.Tile Tile = Mod.Fore[ID];
@@ -100,7 +100,7 @@ namespace Shooter2D
             if (Self && (MultiPlayer.Peer() != null)) MultiPlayer.Send(MultiPlayer.Construct(Game.Packets.ClearFore, (ushort)x, (ushort)y));
             return true;
         }
-        public bool PlaceBack(ushort ID, int x, int y, bool Self = false)
+        public bool PlaceBack(byte ID, int x, int y, bool Self = false)
         {
             if (!InBounds(x, y) || (ID == 0)) return false;
             Mod.Tile Tile = Mod.Back[ID];
@@ -153,9 +153,9 @@ namespace Shooter2D
                     if (Line.StartsWith("size")) Map = new Map(Convert.ToInt32(Elements[0]), Convert.ToInt32(Elements[1]));
                     else
                     {
-                        ushort Fore = Convert.ToUInt16(Elements[0]);
+                        byte Fore = Convert.ToByte(Elements[0]);
                         if (Fore > 0) Map.PlaceFore(Fore, x, y, Convert.ToByte(Elements[2]));
-                        Map.Tiles[x, y].Back = Convert.ToUInt16(Elements[1]);
+                        Map.Tiles[x, y].Back = Convert.ToByte(Elements[1]);
                         if (x == (Map.Tiles.GetLength(0) - 1)) { x = 0; y++; } else x++;
                     }
                 }

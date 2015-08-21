@@ -46,7 +46,7 @@ namespace Shooter2D
 
         public byte Weapon = 0;
         public double FireRate;
-        public void Fire()
+        public void Fire(Vector2 Position, float Angle)
         {
             FireRate = (1 / Mod.Weapons[Weapon].RoundsPerSecond);
             Vector2 Start = (Position + Globe.Rotate(Mod.Weapons[Weapon].Bullet, Angle)), End = Globe.Move(Start, Angle, 2500);
@@ -123,7 +123,7 @@ namespace Shooter2D
                     Angle = Globe.Lerp(Angle, Globe.Angle(Position, Mouse.CameraPosition), .075f);
                     Camera.Position = Globe.Move(Position, Globe.Angle(Position, Mouse.CameraPosition), (Vector2.Distance(Position, Mouse.CameraPosition) / 4));
                     //Camera.Angle = Angle;
-                    if (Mouse.Pressed(Mouse.Buttons.Left) && (FireRate <= 0)) Fire();
+                    if (Mouse.Pressed(Mouse.Buttons.Left) && (FireRate <= 0)) Fire(Position, Angle);
                 }
                 if (Timers.Tick("Positions") && (MultiPlayer.Type("Game") == MultiPlayer.Types.Client))
                     MultiPlayer.Send("Game", MultiPlayer.Construct("Game", Game.Packets.Position, Position, Angle),

@@ -22,7 +22,7 @@ namespace Shooter2D
         public static Player[] Players;
         public static string MpName = "Guest";
 
-        public static ushort EditorForeTile = 1, EditorBackTile = 1;
+        public static byte EditorForeTile = 1, EditorBackTile = 1;
 
         public static ulong Version
         {
@@ -54,7 +54,7 @@ namespace Shooter2D
 
             #endregion
 
-            Screen.Expand(true);
+            //Screen.Expand(true);
             Sound.Initialize(256);
             Performance.UpdateFramesPerSecondBuffer = new float[180];
             Performance.DrawFramesPerSecondBuffer = new float[3];
@@ -91,7 +91,9 @@ namespace Shooter2D
                         }
                         else if (Keyboard.Pressed(Keyboard.Keys.F2))
                         {
-                            MultiPlayer.Connect("Game", "71.3.34.68", 6121, Globe.Version, MpName);
+                            if (Keyboard.Holding(Keyboard.Keys.LeftShift) || Keyboard.Holding(Keyboard.Keys.RightShift))
+                                MultiPlayer.Connect("Game", "127.0.0.1", 6121, Globe.Version, MpName);
+                            else MultiPlayer.Connect("Game", "71.3.34.68", 6121, Globe.Version, MpName);
                         }
                         else if (Keyboard.Pressed(Keyboard.Keys.F3))
                         {
@@ -339,8 +341,8 @@ namespace Shooter2D
             for (int x = 0; x < Map.Tiles.GetLength(0); x++)
                 for (int y = 0; y < Map.Tiles.GetLength(1); y++)
                 {
-                    Map.Tiles[x, y].Fore = I.ReadUInt16();
-                    Map.Tiles[x, y].Back = I.ReadUInt16();
+                    Map.Tiles[x, y].Fore = I.ReadByte();
+                    Map.Tiles[x, y].Back = I.ReadByte();
                     if (Map.Tiles[x, y].Fore > 0) Map.Tiles[x, y].Angle = I.ReadByte();
                 }
             return Map;
@@ -446,7 +448,7 @@ namespace Shooter2D
                     }
                     break;
                 case Packets.PlaceFore:
-                    ushort ID = I.ReadUInt16(), x = I.ReadUInt16(), y = I.ReadUInt16(); byte TAngle = I.ReadByte();
+                    byte ID = I.ReadByte(); ushort x = I.ReadUInt16(), y = I.ReadUInt16(); byte TAngle = I.ReadByte();
                     Map.PlaceFore(ID, x, y, TAngle);
                     if (MultiPlayer.Type("Game") == MultiPlayer.Types.Server) MultiPlayer.Send(MultiPlayer.Construct(Packet, ID, x, y, TAngle), I.SenderConnection);
                     break;
@@ -456,7 +458,7 @@ namespace Shooter2D
                     if (MultiPlayer.Type("Game") == MultiPlayer.Types.Server) MultiPlayer.Send(MultiPlayer.Construct(Packet, x, y), I.SenderConnection);
                     break;
                 case Packets.PlaceBack:
-                    ID = I.ReadUInt16(); x = I.ReadUInt16(); y = I.ReadUInt16();
+                    ID = I.ReadByte(); x = I.ReadUInt16(); y = I.ReadUInt16();
                     Map.PlaceBack(ID, x, y);
                     if (MultiPlayer.Type("Game") == MultiPlayer.Types.Server) MultiPlayer.Send(MultiPlayer.Construct(Packet, ID, x, y), I.SenderConnection);
                     break;
