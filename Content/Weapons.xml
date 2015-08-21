@@ -1,5 +1,5 @@
 <Weapons>
-	<Weapon Name="Sniper" Texture="R" RoundsPerSecond=".5" Damage="100">
-		<Origin Player="10,22" Bullet="47,.5" />
+	<Weapon Name="Sniper" Texture="R" RoundsPerSecond=".5" Damage="1000">
+		<Origin Player="10,22" Bullet="16,.5" />
 	</Weapon>
 </Weapons>

@@ -20,7 +20,11 @@ namespace Shooter2D
         private static Camera Camera { get { return Map.Camera; } }
         public static Player Self;
         public static Player[] Players;
+        
         public static string MpName = "Guest";
+        public enum Types { Deathmatch, TeamDeathmatch, TeamStandard }
+        public static Types Type = Types.TeamStandard;
+        public static double RespawnTimer = 5;
 
         public static byte EditorForeTile = 1, EditorBackTile = 1;
 
@@ -33,7 +37,7 @@ namespace Shooter2D
         public Game()
         {
             Globe.GraphicsDeviceManager = new GraphicsDeviceManager(this)
-            {PreferredBackBufferWidth = 1280, PreferredBackBufferHeight = 720};
+            {PreferredBackBufferWidth = 960, PreferredBackBufferHeight = 540};
             //AppDomain.CurrentDomain.UnhandledException += (sender, args) => MessageBox.Show(((Exception)args.ExceptionObject).ToString());
         }
 
@@ -54,7 +58,7 @@ namespace Shooter2D
 
             #endregion
 
-            //Screen.Expand(true);
+            Screen.Expand(true);
             Sound.Initialize(256);
             Performance.UpdateFramesPerSecondBuffer = new float[180];
             Performance.DrawFramesPerSecondBuffer = new float[3];
@@ -242,6 +246,7 @@ namespace Shooter2D
                             if (Textures.Exists("Tiles.Fore." + ID)) Textures.Draw(("Tiles.Fore." + ID), UIPos, null, (Color.White * Opacity), 0, Origin.Center, 1);
                             if (Mod.Fore[ID].Frames > 0)
                             {
+                                //Console.WriteLine(Mod.Fore[ID].Speed);
                                 if (Mod.Fore[ID].Animation == null) Mod.Fore[ID].Animation = new Animation(("Tiles.Fore." + ID + "-"), Mod.Fore[ID].Frames, true, Mod.Fore[ID].Speed);
                                 else Mod.Fore[ID].Animation.Update(Time);
                                 Textures.Draw(Mod.Fore[ID].Animation.Texture(), UIPos, null, (Color.White * Opacity), 0, Origin.Center, 1);
@@ -364,6 +369,7 @@ namespace Shooter2D
                                     MultiPlayer.Construct("Game", Packet, Connector.Slot, Connector.Name),
                                     I.SenderConnection);
                                 var Details = new List<object>();
+                                Details.Add((byte)Type); Details.Add(RespawnTimer);
                                 for (byte i = 0; i < Players.Length; i++)
                                     if ((Players[i] != null) && (Players[i] != Connector))
                                     {
@@ -398,6 +404,7 @@ namespace Shooter2D
                     {
                         Players = new Player[I.ReadByte()];
                         Self = Player.Set(I.ReadByte(), new Player(MpName));
+                        Type = (Types)I.ReadByte(); RespawnTimer = I.ReadDouble();
                         for (byte i = 0; i < Players.Length; i++)
                             if (I.ReadBoolean())
                             {
@@ -467,6 +474,24 @@ namespace Shooter2D
                     Map.ClearBack(x, y);
                     if (MultiPlayer.Type("Game") == MultiPlayer.Types.Server) MultiPlayer.Send(MultiPlayer.Construct(Packet, x, y), I.SenderConnection);
                     break;
+                case Packets.Fire:
+                    Sender = ((MultiPlayer.Type("Game") == MultiPlayer.Types.Server) ? Player.Get(I.SenderConnection) : Players[I.ReadByte()]);
+                    Position = I.ReadVector2(); Angle = I.ReadFloat();
+                    Sender.Fire(Position, Angle);
+                    if (MultiPlayer.Type() == MultiPlayer.Types.Server) MultiPlayer.Send(MultiPlayer.Construct(Packet, Sender.Slot, Position, Angle), I.SenderConnection);
+                    break;
+                case Packets.Death:
+                    Sender = ((MultiPlayer.Type("Game") == MultiPlayer.Types.Server) ? Player.Get(I.SenderConnection) : Players[I.ReadByte()]);
+                    Sender.Killer = Players[I.ReadByte()];
+                    Sender.Die();
+                    if (MultiPlayer.Type() == MultiPlayer.Types.Server) MultiPlayer.Send(MultiPlayer.Construct(Packet, Sender.Slot, Sender.Killer.Slot), I.SenderConnection);
+                    break;
+                case Packets.Respawn:
+                    Sender = ((MultiPlayer.Type("Game") == MultiPlayer.Types.Server) ? Player.Get(I.SenderConnection) : Players[I.ReadByte()]);
+                    Position = I.ReadVector2();
+                    Sender.Respawn(Position);
+                    if (MultiPlayer.Type() == MultiPlayer.Types.Server) MultiPlayer.Send(MultiPlayer.Construct(Packet, Sender.Slot, Position), I.SenderConnection);
+                    break;
             }
         }
 
@@ -474,13 +499,11 @@ namespace Shooter2D
         {
             Connection,
             Disconnection,
-            Initial,
-            RequestMap,
+            Initial, RequestMap,
             Position,
-            PlaceFore,
-            ClearFore,
-            PlaceBack,
-            ClearBack
+            PlaceFore, ClearFore, PlaceBack, ClearBack,
+            Fire, Death, Respawn,
+            EndRound, NewRound
         }
 
         public enum States

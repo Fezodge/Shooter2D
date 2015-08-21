@@ -18,7 +18,7 @@ namespace Shooter2D
             Dictionary<ushort, Tile> Array = new Dictionary<ushort, Tile>();
             if (!File.Exists(Path)) return null;
             XmlTextReader Reader = new XmlTextReader(Path);
-            ushort ID = 0;
+            ushort ID = 1;
             Tile Tile = null;
             while (Reader.Read())
                 switch (Reader.NodeType)
@@ -30,8 +30,7 @@ namespace Shooter2D
                             End = Reader.IsEmptyElement;
                             Tile = new Tile();
                             while (Reader.MoveToNextAttribute())
-                                if (Reader.Name == "ID") ID = Convert.ToUInt16(Reader.Value);
-                                else if (Reader.Name == "Type") Tile.Type = (Tile.Types)Enum.Parse(typeof(Tile.Types), Reader.Value);
+                                if (Reader.Name == "Type") Tile.Type = (Tile.Types)Enum.Parse(typeof(Tile.Types), Reader.Value);
                                 else if (Reader.Name == "Border") Tile.Border = Convert.ToBoolean(Reader.Value);
                                 else if (Reader.Name == "ClipToFore") Tile.ClipToFore = Convert.ToBoolean(Reader.Value);
                                 else if (Reader.Name == "Invisible") Tile.Invisible = Convert.ToBoolean(Reader.Value);
@@ -39,23 +38,35 @@ namespace Shooter2D
                                 else if (Reader.Name == "Frames") Tile.Frames = Convert.ToByte(Reader.Value);
                                 else if (Reader.Name == "Speed") Tile.Speed = Convert.ToSingle(Reader.Value);
                         }
-                        if (Reader.Name == "Animation")
+                        else if (Reader.Name == "Animation")
                         {
                             while (Reader.MoveToNextAttribute())
                                 if (Reader.Name == "Frames") Tile.Frames = Convert.ToByte(Reader.Value);
                                 else if (Reader.Name == "Speed") Tile.Speed = Convert.ToSingle(Reader.Value);
                         }
+                        else if (Reader.Name == "Walk")
+                        {
+                            while (Reader.MoveToNextAttribute())
+                                if (Reader.Name == "Path") Tile.FootstepsWalkPath = Reader.Value;
+                                else if (Reader.Name == "Count") Tile.FootstepsWalkCount = Convert.ToByte(Reader.Value);
+                        }
+                        else if (Reader.Name == "Run")
+                        {
+                            while (Reader.MoveToNextAttribute())
+                                if (Reader.Name == "Path") Tile.FootstepsRunPath = Reader.Value;
+                                else if (Reader.Name == "Count") Tile.FootstepsRunCount = Convert.ToByte(Reader.Value);
+                        }
                         if (End)
                         {
                             Array.Add(ID, Tile);
-                            ID = 0; Tile = null;
+                            ID++; Tile = null;
                         }
                         break;
                     case XmlNodeType.EndElement:
                         if (Reader.Name == "Tile")
                         {
                             Array.Add(ID, Tile);
-                            ID = 0; Tile = null;
+                            ID++; Tile = null;
                         }
                         break;
                 }
@@ -119,6 +130,9 @@ namespace Shooter2D
             public Animation Animation;
             public byte Frames;
             public float Speed;
+
+            public string FootstepsWalkPath, FootstepsRunPath;
+            public byte FootstepsWalkCount, FootstepsRunCount;
         }
 
         public class Weapon

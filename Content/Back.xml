@@ -1,24 +1,31 @@
 <Tiles>
-	<Tile ID = "1" Name="Grass">
+	<Tile Name="Grass">
 		<Footsteps>
 			<Walk Path="Walk Trainers Compact Gravel" Count="8" />
 			<Run Path="Run Trainers Compact Gravel" Count="8" />
 		</Footsteps>
 	</Tile>
-	<Tile ID = "2" Name="Concrete">
+	<Tile Name="Concrete">
 		<Footsteps>
 			<Walk Path="Walk Trainers Compact Gravel" Count="8" />
 			<Run Path="Run Trainers Compact Gravel" Count="8" />
 		</Footsteps>
 	</Tile>
-	<Tile ID = "3" Name="Gravel">
+	<Tile Name="Gravel">
 		<Footsteps>
 			<Walk Path="Walk Trainers Compact Gravel" Count="8" />
 			<Run Path="Run Trainers Compact Gravel" Count="8" />
 		</Footsteps>
 	</Tile>
-	<Tile ID = "4" Name="Dance Floor">
+	<Tile Name="Dance Floor">
 		<Animation Frames="2" Speed=".5" />
+		<Footsteps>
+			<Walk Path="Walk Trainers Compact Gravel" Count="8" />
+			<Run Path="Run Trainers Compact Gravel" Count="8" />
+		</Footsteps>
+	</Tile>
+	<Tile Name="Large Floor Fan">
+		<Animation Frames="5" Speed=".01" />
 		<Footsteps>
 			<Walk Path="Walk Trainers Compact Gravel" Count="8" />
 			<Run Path="Run Trainers Compact Gravel" Count="8" />

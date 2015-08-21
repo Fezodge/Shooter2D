@@ -25,7 +25,7 @@ namespace Shooter2D
         public Map(int Width, int Height)
         {
             Tiles = new Tile[Width, Height];
-            for (int x = 0; x < Width; x++) for (int y = 0; y < Height; y++) Tiles[x, y].Back = 1;
+            for (int x = 0; x < Width; x++) for (int y = 0; y < Height; y++) Tiles[x, y].Back = 2;
             Camera = new Camera();
             Pathfinder = new Pathfinder(Width, Height);
             Waypoints = new List<Point>[3];
@@ -44,13 +44,15 @@ namespace Shooter2D
         public void Draw() { Draw(Globe.Batches[0]); }
         public void Draw(Batch Batch)
         {
-            for (int x = (int)((Camera.X - (Screen.ViewportWidth / 2f)) / Tile.Width); x <= (int)((Camera.X + (Screen.ViewportWidth / 2f)) / Tile.Width); x++)
-                for (int y = (int)((Camera.Y - (Screen.ViewportHeight / 2f)) / Tile.Height); y <= (int)((Camera.Y + (Screen.ViewportHeight / 2f)) / Tile.Height); y++)
+            float LayerOffset = 0;
+            for (int y = (int)((Camera.Y - (Screen.ViewportHeight / 2f)) / Tile.Height); y <= (int)((Camera.Y + (Screen.ViewportHeight / 2f)) / Tile.Height); y++)
+                for (int x = (int)((Camera.X - (Screen.ViewportWidth / 2f)) / Tile.Width); x <= (int)((Camera.X + (Screen.ViewportWidth / 2f)) / Tile.Width); x++)
                     if (InBounds(x, y))
                     {
                         Tile Tile = Tiles[x, y];
                         Vector2 Position = new Vector2(((x * Tile.Width) + (Tile.Width / 2f)), ((y * Tile.Height) + (Tile.Height / 2f)));
-                        Tile.Draw(Batch, Position);
+                        Tile.Draw(Batch, Position, LayerOffset);
+                        LayerOffset += .000001f;
                     }
             foreach (Line Bullet in Bullets) Bullet.Draw(Batch, Color.White);
         }

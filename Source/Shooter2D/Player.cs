@@ -10,8 +10,12 @@ using static EzGame.Perspective.Planar.Textures;
 
 namespace Shooter2D
 {
+    using GameTypes = Game.Types;
+    using Packets = Game.Packets;
+
     public class Player : Object
     {
+        private static GameTypes GameType { get { return Game.Type; } }
         private static Map Map { get { return Game.Map; } }
         private static Camera Camera { get { return Map.Camera; } }
         private static List<Line> Bullets { get { return Map.Bullets; } }
@@ -22,13 +26,14 @@ namespace Shooter2D
         {
             get
             {
-                Mask.Position = Position;
+                Mask.Position = (Position + new Vector2(0, (4 * Scale)));
                 if (Map != null)
                 for (int x = (int)(Position.X / Tile.Width - 1); x <= (Position.X / Tile.Width + 1); x++)
                     for (int y = (int)(Position.Y / Tile.Height - 1); y <= (Position.Y / Tile.Height + 1); y++)
-                        if (Map.InBounds(x, y) && Map.Tiles[x, y].HasFore && (Mod.Fore[Map.Tiles[x, y].Fore].Type == (Mod.Tile.Types.Platform | Mod.Tile.Types.Wall)))
+                        if (Map.InBounds(x, y) && Map.Tiles[x, y].HasFore &&
+                                ((Mod.Fore[Map.Tiles[x, y].Fore].Type == Mod.Tile.Types.Platform) || (Mod.Fore[Map.Tiles[x, y].Fore].Type == Mod.Tile.Types.Wall)))
                         {
-                            Polygon Mask = Polygon.CreateRectangleWithCross(new Vector2(Tile.Width, Tile.Height), Vector2.Zero);
+                            Polygon Mask = Polygon.CreateRectangle(new Vector2(Tile.Width, Tile.Height), Vector2.Zero);
                             Mask.Position = new Vector2(((x * Tile.Width) + (Tile.Width / 2f)), ((y * Tile.Height) + (Tile.Height / 2f)));
                             if (this.Mask.Intersects(Mask)) return true;
                         }
@@ -40,8 +45,39 @@ namespace Shooter2D
         public Polygon Mask { get; private set; }
         public string Name;
         public byte Slot;
+        public Vector2 InterpolatedPosition;
+        public float InterpolatedAngle;
 
+        public byte Team;
         public float Health;
+        public bool Dead;
+        public Player Killer;
+        public double RespawnTimer;
+        public void Die()
+        {
+            if ((this == Self) && (Killer == null)) Killer = Self;
+            if (Killer != null)
+            {
+                Killer.Kills++;
+            }
+            Deaths++; Dead = true; RespawnTimer = Game.RespawnTimer;
+            if (this == Self)
+            {
+                if (MultiPlayer.Type() == MultiPlayer.Types.Client) MultiPlayer.Send(MultiPlayer.Construct(Packets.Death, Killer.Slot));
+                else if (MultiPlayer.Type() == MultiPlayer.Types.Server) MultiPlayer.Send(MultiPlayer.Construct(Packets.Death, Slot, Killer.Slot));
+            }
+        }
+        public void Respawn(Vector2 Position)
+        {
+            Killer = null; Health = 1000; Dead = false;
+            this.Position = Position; bool T = Collides;
+            if (this == Self)
+            {
+                if (MultiPlayer.Type() == MultiPlayer.Types.Client) MultiPlayer.Send(MultiPlayer.Construct(Packets.Respawn, Position));
+                else if (MultiPlayer.Type() == MultiPlayer.Types.Server) MultiPlayer.Send(MultiPlayer.Construct(Packets.Respawn, Slot, Position));
+            }
+        }
+        public ushort Kills, Deaths;
         public Vector2 Speed = new Vector2(50, 50);
 
         public byte Weapon = 0;
@@ -49,7 +85,7 @@ namespace Shooter2D
         public void Fire(Vector2 Position, float Angle)
         {
             FireRate = (1 / Mod.Weapons[Weapon].RoundsPerSecond);
-            Vector2 Start = (Position + Globe.Rotate(Mod.Weapons[Weapon].Bullet, Angle)), End = Globe.Move(Start, Angle, 2500);
+            Vector2 Start = (Position + Globe.Rotate((Mod.Weapons[Weapon].Bullet * Scale), Angle)), End = Globe.Move(Start, Angle, 2500);
             Line Bullet = new Line(Start, End);
             for (int x = 0; x < Map.Tiles.GetLength(0); x++)
                 for (int y = 0; y < Map.Tiles.GetLength(1); y++)
@@ -60,6 +96,21 @@ namespace Shooter2D
                         Vector2 Intersection = Vector2.Zero;
                         if (Mask.Intersects(Bullet, ref Intersection)) Bullet.End = Intersection;
                     }
+            if (this == Self)
+            {
+                if (MultiPlayer.Type() == MultiPlayer.Types.Client) MultiPlayer.Send(MultiPlayer.Construct(Packets.Fire, Position, Angle));
+                else if (MultiPlayer.Type() == MultiPlayer.Types.Server) MultiPlayer.Send(MultiPlayer.Construct(Packets.Fire, Slot, Position, Angle));
+            }
+            else
+            {
+                for (byte i = 0; i < Players.Length; i++)
+                    if ((Players[i] != null) && (Players[i] != this) && (Players[i] != Self) && ((Players[i].Team == 0) || (Team == 0) || (Players[i].Team != Team)))
+                    {
+                        Vector2 Intersection = Vector2.Zero;
+                        if (Players[i].Mask.Intersects(Bullet, ref Intersection)) Bullet.End = Intersection;
+                    }
+                if (((Team == 0) || (Self.Team == 0) || (Team != Self.Team)) && Self.Mask.Intersects(Bullet)) { Self.Health -= Mod.Weapons[Weapon].Damage; Self.Killer = this; }
+            }
             Bullets.Add(Bullet);
         }
 
@@ -78,7 +129,8 @@ namespace Shooter2D
 
         public void Load()
         {
-            Mask = Polygon.CreateCircle(24, Vector2.Zero);
+            Scale = .6f;
+            Mask = Polygon.CreateCircle((28 * Scale), Vector2.Zero);
             Position = new Vector2((Screen.ViewportWidth / 2f), (Screen.ViewportHeight / 2f));
             bool T = Collides;
         }
@@ -120,15 +172,19 @@ namespace Shooter2D
                     if (OldPosition != Position)
                     {
                     }
-                    Angle = Globe.Lerp(Angle, Globe.Angle(Position, Mouse.CameraPosition), .075f);
+                    Angle = Globe.Lerp(Angle, Globe.Angle(Position, Mouse.CameraPosition), .1f);
                     Camera.Position = Globe.Move(Position, Globe.Angle(Position, Mouse.CameraPosition), (Vector2.Distance(Position, Mouse.CameraPosition) / 4));
                     //Camera.Angle = Angle;
                     if (Mouse.Pressed(Mouse.Buttons.Left) && (FireRate <= 0)) Fire(Position, Angle);
                 }
+                if (RespawnTimer > 0) RespawnTimer -= Time.ElapsedGameTime.TotalSeconds;
+                if ((Health <= 0) && !Dead) Die();
                 if (Timers.Tick("Positions") && (MultiPlayer.Type("Game") == MultiPlayer.Types.Client))
                     MultiPlayer.Send("Game", MultiPlayer.Construct("Game", Game.Packets.Position, Position, Angle),
                         NetDeliveryMethod.UnreliableSequenced, 1);
             }
+            Globe.Move(ref InterpolatedPosition, Position, (Vector2.Distance(InterpolatedPosition, Position) / 6));
+            InterpolatedAngle = Globe.Lerp(InterpolatedAngle, Angle, .125f);
             base.Update(Time);
         }
 
@@ -140,8 +196,25 @@ namespace Shooter2D
         public override void Draw(Batch Batch, Vector2 Position, Color Color, float Opacity, float Angle, Origin Origin,
             float Scale, SpriteEffects Effect = SpriteEffects.None, float Layer = 0)
         {
-            Batch.Draw(Textures.Get("Players.1-" + Mod.Weapons[Weapon].Texture), Position, null, (Color * Opacity), Angle, new Origin(Mod.Weapons[Weapon].Player.X, Mod.Weapons[Weapon].Player.Y), 1);
-            Mask.Draw(Color.White, 1);
+            /*Batch.Draw(Textures.Get("Players.1-" + Mod.Weapons[Weapon].Texture), Position, null, (Color.Black * (Opacity * .65f)), Angle, new Origin(Mod.Weapons[Weapon].Player.X, Mod.Weapons[Weapon].Player.Y),
+                Scale, SpriteEffects.None, .425002f);*/
+            if (Vector2.Distance(InterpolatedPosition, Position) <= 50)
+            {
+                Vector2 ShadowPosition = Globe.Move(InterpolatedPosition, Globe.Angle(new Vector2((Map.Width / 2f), (Map.Height / 2f)), InterpolatedPosition), 5);
+                Batch.Draw(Textures.Get("Players.1-" + Mod.Weapons[Weapon].Texture), ShadowPosition, null, (Color.Black * (Opacity * .35f)), InterpolatedAngle, new Origin(Mod.Weapons[Weapon].Player.X, Mod.Weapons[Weapon].Player.Y),
+                    Scale, SpriteEffects.None, .425001f);
+                Batch.Draw(Textures.Get("Players.1-" + Mod.Weapons[Weapon].Texture), InterpolatedPosition, null, (Color * Opacity), InterpolatedAngle, new Origin(Mod.Weapons[Weapon].Player.X, Mod.Weapons[Weapon].Player.Y),
+                    Scale, SpriteEffects.None, .425f);
+            }
+            else
+            {
+                Vector2 ShadowPosition = Globe.Move(Position, Globe.Angle(new Vector2((Map.Width / 2f), (Map.Height / 2f)), Position), 5);
+                Batch.Draw(Textures.Get("Players.1-" + Mod.Weapons[Weapon].Texture), ShadowPosition, null, (Color.Black * (Opacity * .35f)), Angle, new Origin(Mod.Weapons[Weapon].Player.X, Mod.Weapons[Weapon].Player.Y),
+                    Scale, SpriteEffects.None, .425001f);
+                Batch.Draw(Textures.Get("Players.1-" + Mod.Weapons[Weapon].Texture), Position, null, (Color.Black * (Opacity * .65f)), Angle, new Origin(Mod.Weapons[Weapon].Player.X, Mod.Weapons[Weapon].Player.Y),
+                   Scale, SpriteEffects.None, .425001f);
+            }
+            //Mask.Draw(Color.White, 1);
         }
 
         public void Move(Vector2 Offset)

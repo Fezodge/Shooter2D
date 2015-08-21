@@ -1,7 +1,7 @@
 <Tiles>
-	<Tile ID = "1" Name="Concrete Wall" Type="Wall" Border="True" />
-	<Tile ID = "2" Name="FFA Waypoint" Invisible="True" Waypoint="0" />
-	<Tile ID = "3" Name="T-1 Waypoint" Invisible="True" Waypoint="1" />
-	<Tile ID = "4" Name="T-2 Waypoint" Invisible="True" Waypoint="2" />
-	<Tile ID = "5" Name="Brick Wall" Type="Wall" Border="True" />
+	<Tile Name="Concrete Wall" Type="Wall" Border="True" />
+	<Tile Name="FFA Waypoint" Invisible="True" Waypoint="0" />
+	<Tile Name="T-1 Waypoint" Invisible="True" Waypoint="1" />
+	<Tile Name="T-2 Waypoint" Invisible="True" Waypoint="2" />
+	<Tile Name="Brick Wall" Type="Wall" Border="True" />
 </Tiles>
