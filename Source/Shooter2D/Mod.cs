@@ -80,12 +80,15 @@ namespace Shooter2D
                             Weapon = new Weapon();
                             while (Reader.MoveToNextAttribute())
                                 if (Reader.Name == "Name") Weapon.Name = Reader.Value;
+                                else if (Reader.Name == "Texture") Weapon.Texture = Reader.Value;
                                 else if (Reader.Name == "RoundsPerSecond") Weapon.RoundsPerSecond = Convert.ToDouble(Reader.Value);
+                                else if (Reader.Name == "Damage") Weapon.Damage = Convert.ToSingle(Reader.Value);
                         }
                         if (Reader.Name == "Origin")
                         {
                             while (Reader.MoveToNextAttribute())
-                                if (Reader.Name == "Point") Weapon.Origin = new Origin(Convert.ToSingle(Reader.Value.Split(',')[0]), Convert.ToSingle(Reader.Value.Split(',')[1]));
+                                if (Reader.Name == "Player") Weapon.Player = new Vector2(Convert.ToSingle(Reader.Value.Split(',')[0]), Convert.ToSingle(Reader.Value.Split(',')[1]));
+                                else if (Reader.Name == "Bullet") Weapon.Bullet = new Vector2(Convert.ToSingle(Reader.Value.Split(',')[0]), Convert.ToSingle(Reader.Value.Split(',')[1]));
                         }
                         if (End)
                         {
@@ -94,7 +97,7 @@ namespace Shooter2D
                         }
                         break;
                     case XmlNodeType.EndElement:
-                        if (Reader.Name == "Tile")
+                        if (Reader.Name == "Weapon")
                         {
                             Array.Add(ID, Weapon);
                             ID++; Weapon = null;
@@ -120,9 +123,10 @@ namespace Shooter2D
 
         public class Weapon
         {
-            public string Name;
+            public string Name, Texture;
             public double RoundsPerSecond;
-            public Origin Origin;
+            public float Damage;
+            public Vector2 Player, Bullet;
         }
     }
 }

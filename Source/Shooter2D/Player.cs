@@ -5,6 +5,7 @@ using EzGame.Perspective.Planar;
 using Lidgren.Network;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using System.Collections.Generic;
 using static EzGame.Perspective.Planar.Textures;
 
 namespace Shooter2D
@@ -13,6 +14,7 @@ namespace Shooter2D
     {
         private static Map Map { get { return Game.Map; } }
         private static Camera Camera { get { return Map.Camera; } }
+        private static List<Line> Bullets { get { return Map.Bullets; } }
         private static Player Self => Game.Self;
         private static Player[] Players => Game.Players;
 
@@ -38,7 +40,28 @@ namespace Shooter2D
         public Polygon Mask { get; private set; }
         public string Name;
         public byte Slot;
+
+        public float Health;
         public Vector2 Speed = new Vector2(50, 50);
+
+        public byte Weapon = 0;
+        public double FireRate;
+        public void Fire()
+        {
+            FireRate = (1 / Mod.Weapons[Weapon].RoundsPerSecond);
+            Vector2 Start = (Position + Globe.Rotate(Mod.Weapons[Weapon].Bullet, Angle)), End = Globe.Move(Start, Angle, 2500);
+            Line Bullet = new Line(Start, End);
+            for (int x = 0; x < Map.Tiles.GetLength(0); x++)
+                for (int y = 0; y < Map.Tiles.GetLength(1); y++)
+                    if (Map.Tiles[x, y].HasFore && (Mod.Fore[Map.Tiles[x, y].Fore].Type == Mod.Tile.Types.Wall))
+                    {
+                        Polygon Mask = Polygon.CreateCross(new Vector2(Tile.Width, Tile.Height), Vector2.Zero);
+                        Mask.Position = new Vector2(((x * Tile.Width) + (Tile.Width / 2f)), ((y * Tile.Height) + (Tile.Height / 2f)));
+                        Vector2 Intersection = Vector2.Zero;
+                        if (Mask.Intersects(Bullet, ref Intersection)) Bullet.End = Intersection;
+                    }
+            Bullets.Add(Bullet);
+        }
 
         public Player(string Name)
         {
@@ -63,6 +86,7 @@ namespace Shooter2D
         public override void Update(GameTime Time)
         {
             if ((Animation == null) || Animation.Finished) ;
+            if (FireRate > 0) FireRate -= Time.ElapsedGameTime.TotalSeconds;
             if (this == Self)
             {
                 if (Globe.Active)
@@ -96,9 +120,10 @@ namespace Shooter2D
                     if (OldPosition != Position)
                     {
                     }
-                    Angle = Globe.Lerp(Angle, Globe.Angle(Position, Mouse.CameraPosition), .035f);
-                    Camera.Position = Globe.Move(Position, Angle, (Vector2.Distance(Position, Mouse.CameraPosition) / 4));
+                    Angle = Globe.Lerp(Angle, Globe.Angle(Position, Mouse.CameraPosition), .075f);
+                    Camera.Position = Globe.Move(Position, Globe.Angle(Position, Mouse.CameraPosition), (Vector2.Distance(Position, Mouse.CameraPosition) / 4));
                     //Camera.Angle = Angle;
+                    if (Mouse.Pressed(Mouse.Buttons.Left) && (FireRate <= 0)) Fire();
                 }
                 if (Timers.Tick("Positions") && (MultiPlayer.Type("Game") == MultiPlayer.Types.Client))
                     MultiPlayer.Send("Game", MultiPlayer.Construct("Game", Game.Packets.Position, Position, Angle),
@@ -115,6 +140,7 @@ namespace Shooter2D
         public override void Draw(Batch Batch, Vector2 Position, Color Color, float Opacity, float Angle, Origin Origin,
             float Scale, SpriteEffects Effect = SpriteEffects.None, float Layer = 0)
         {
+            Batch.Draw(Textures.Get("Players.1-" + Mod.Weapons[Weapon].Texture), Position, null, (Color * Opacity), Angle, new Origin(Mod.Weapons[Weapon].Player.X, Mod.Weapons[Weapon].Player.Y), 1);
             Mask.Draw(Color.White, 1);
         }
 

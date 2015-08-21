@@ -30,6 +30,7 @@ namespace Shooter2D
             Pathfinder = new Pathfinder(Width, Height);
             Waypoints = new List<Point>[3];
             for (int i = 0; i < Waypoints.Length; i++) Waypoints[i] = new List<Point>();
+            Bullets = new List<Line>();
         }
 
         public void Update(GameTime Time)
@@ -51,6 +52,7 @@ namespace Shooter2D
                         Vector2 Position = new Vector2(((x * Tile.Width) + (Tile.Width / 2f)), ((y * Tile.Height) + (Tile.Height / 2f)));
                         Tile.Draw(Batch, Position);
                     }
+            foreach (Line Bullet in Bullets) Bullet.Draw(Batch, Color.White);
         }
 
         public ushort AFore(Point Point) { Point = (Point + new Point(0, -1)); if (InBounds(Point.X, Point.Y)) return Tiles[Point.X, Point.Y].Fore; else return 0; }
