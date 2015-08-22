@@ -163,9 +163,9 @@ namespace Shooter2D
                     if (Line.StartsWith("size")) Map = new Map(Convert.ToInt32(Elements[0]), Convert.ToInt32(Elements[1]));
                     else
                     {
-                        byte Fore = Convert.ToByte(Elements[0]);
+                        byte Fore = Convert.ToByte(Elements[0]), Back = Convert.ToByte(Elements[1]);
                         if (Fore > 0) Map.PlaceFore(Fore, x, y, Convert.ToByte(Elements[2]));
-                        Map.Tiles[x, y].Back = Convert.ToByte(Elements[1]);
+                        if (Back > 0) Map.PlaceBack(Back, x, y);
                         if (x == (Map.Tiles.GetLength(0) - 1)) { x = 0; y++; } else x++;
                     }
                 }

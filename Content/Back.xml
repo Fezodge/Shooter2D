@@ -25,7 +25,7 @@
 		</Footsteps>
 	</Tile>
 	<Tile Name="Large Floor Fan">
-		<Animation Frames="5" Speed=".01" />
+		<Animation Frames="5" Speed=".02" />
 		<Footsteps>
 			<Walk Path="Walk Trainers Compact Gravel" Count="8" />
 			<Run Path="Run Trainers Compact Gravel" Count="8" />

@@ -25,14 +25,14 @@ namespace Shooter2D
 
         public enum GameTypes { Deathmatch, TeamDeathmatch, TeamStandard }
         public static GameTypes GameType = GameTypes.TeamStandard;
-        public static double RespawnTimer = 5, RoundTimer;
+        public static double RespawnTimer = 5, RoundTimer, RoundEndWait;
         public enum VictoryStates { Draw, Team, Neutral }
-        public static byte RoundEndMusicIndex;
+        public static bool RoundEnded = true;
         public static ushort? RoundEndMusicChannel;
 
-        public byte TeamCount(byte Team) { byte Count = 0; for (byte i = 0; i < Players.Length; i++) if ((Players[i] != null) && (Players[i].Team == Team)) Count++; return Count; }
-        public byte AliveCount(byte Team) { byte Count = 0; for (byte i = 0; i < Players.Length; i++) if ((Players[i] != null) && (Players[i].Team == Team) && !Players[i].Dead) Count++; return Count; }
-        public byte DeadCount(byte Team) { byte Count = 0; for (byte i = 0; i < Players.Length; i++) if ((Players[i] != null) && (Players[i].Team == Team) && Players[i].Dead) Count++; return Count; }
+        public static byte TeamCount(byte Team) { byte Count = 0; for (byte i = 0; i < Players.Length; i++) if ((Players[i] != null) && (Players[i].Team == Team)) Count++; return Count; }
+        public static byte AliveCount(byte Team) { byte Count = 0; for (byte i = 0; i < Players.Length; i++) if ((Players[i] != null) && (Players[i].Team == Team) && !Players[i].Dead) Count++; return Count; }
+        public static byte DeadCount(byte Team) { byte Count = 0; for (byte i = 0; i < Players.Length; i++) if ((Players[i] != null) && (Players[i].Team == Team) && Players[i].Dead) Count++; return Count; }
 
         public static byte EditorForeTile = 1, EditorBackTile = 1;
 
@@ -171,10 +171,20 @@ namespace Shooter2D
                                 }
                         if (GameType == GameTypes.TeamStandard)
                         {
-                            if ((DeadCount(1) == TeamCount(1)) && (DeadCount(2) == TeamCount(2)))
+                            if (!RoundEnded)
                             {
-                                RoundEndMusicIndex = 0;
-                                MultiPlayer.Send(MultiPlayer.Construct(Packets.EndRound, (byte)VictoryStates.Draw, RoundEndMusicIndex));
+                                if (RoundEndWait > 0) RoundEndWait -= Time.ElapsedGameTime.TotalSeconds;
+                                else if ((TeamCount(1) > 0) && (TeamCount(2) > 0))
+                                {
+                                    if ((DeadCount(1) == TeamCount(1)) && (DeadCount(2) == TeamCount(2))) EndRound(VictoryStates.Draw, 0, 0);
+                                    else if (DeadCount(1) == TeamCount(1)) EndRound(VictoryStates.Team, 2, 0);
+                                    else if (DeadCount(2) == TeamCount(2)) EndRound(VictoryStates.Team, 1, 0);
+                                }
+                            }
+                            else
+                            {
+                                if (RoundTimer > 0) RoundTimer -= Time.ElapsedGameTime.TotalSeconds;
+                                else NewRound();
                             }
                         }
                     }
@@ -313,6 +323,27 @@ namespace Shooter2D
             base.Draw(Time);
         }
 
+        public static void NewRound()
+        {
+            RoundTimer = 0; RoundEnded = false;
+            for (byte i = 0; i < Players.Length; i++) if (Players[i] != null) Players[i].Dead = false;
+            Point Spawn = Map.GetSpawn(Self.Team);
+            Self.Respawn(new Vector2(((Spawn.X * Tile.Width) + (Tile.Width / 2f)), ((Spawn.Y * Tile.Height) + (Tile.Height / 2f))));
+            if (MultiPlayer.Type() == MultiPlayer.Types.Server) MultiPlayer.Send(MultiPlayer.Construct(Packets.NewRound));
+        }
+        public static void EndRound(VictoryStates VictoryState, byte TeamWon, byte RoundEndMusicIndex)
+        {
+            RoundTimer = 10; RoundEnded = true;
+            if (MultiPlayer.Type() == MultiPlayer.Types.Server)
+            {
+                List<object> Details = new List<object>();
+                Details.Add((byte)VictoryState);
+                if (VictoryState == VictoryStates.Team) Details.Add(TeamWon);
+                Details.Add(RoundEndMusicIndex);
+                MultiPlayer.Send(MultiPlayer.Construct(Packets.EndRound, Details));
+            }
+        }
+
         protected override void OnExiting(object sender, EventArgs args)
         {
             if ((Map != null) && (State == States.MapEditor) && MultiPlayer.IsNullOrServer()) Map.Save(@".\map.dat");
@@ -364,9 +395,9 @@ namespace Shooter2D
             for (int x = 0; x < Map.Tiles.GetLength(0); x++)
                 for (int y = 0; y < Map.Tiles.GetLength(1); y++)
                 {
-                    Map.Tiles[x, y].Fore = I.ReadByte();
-                    Map.Tiles[x, y].Back = I.ReadByte();
-                    if (Map.Tiles[x, y].Fore > 0) Map.Tiles[x, y].Angle = I.ReadByte();
+                    byte Fore = I.ReadByte(), Back = I.ReadByte();
+                    if (Fore > 0) Map.PlaceFore(Fore, x, y, I.ReadByte());
+                    if (Back > 0) Map.PlaceBack(Back, x, y);
                 }
             return Map;
         }
@@ -383,16 +414,18 @@ namespace Shooter2D
                             var Connector = Player.Add(new Player(I.ReadString()) {Connection = I.SenderConnection});
                             if (Connector != null)
                             {
-                                MultiPlayer.Send("Game",
-                                    MultiPlayer.Construct("Game", Packet, Connector.Slot, Connector.Name),
-                                    I.SenderConnection);
+                                if ((GameType == GameTypes.TeamDeathmatch) || (GameType == GameTypes.TeamStandard))
+                                    Connector.Team = (byte)((TeamCount(1) > TeamCount(2)) ? 2 : ((TeamCount(2) > TeamCount(1)) ? 1 : Globe.Random(1, 2)));
+                                MultiPlayer.Send("Game", MultiPlayer.Construct("Game", Packet, Connector.Slot, Connector.Name, Connector.Team), I.SenderConnection);
                                 var Details = new List<object>();
                                 Details.Add((byte)GameType); Details.Add(RespawnTimer);
+                                Details.Add(Connector.Team);
                                 for (byte i = 0; i < Players.Length; i++)
                                     if ((Players[i] != null) && (Players[i] != Connector))
                                     {
                                         Details.Add(true);
                                         Details.Add(Players[i].Name);
+                                        Details.Add(Players[i].Team);
                                     }
                                     else Details.Add(false);
                                 I.SenderConnection.Approve(MultiPlayer.Construct("Game", Packets.Initial, (byte)Players.Length, Connector.Slot, Details));
@@ -405,7 +438,7 @@ namespace Shooter2D
                     else if (MultiPlayer.Type("Game") == MultiPlayer.Types.Client)
                     {
                         var Slot = I.ReadByte();
-                        Player.Set(Slot, new Player(I.ReadString()));
+                        Player.Set(Slot, new Player(I.ReadString()) { Team = I.ReadByte() });
                     }
                     break;
                 case Packets.Disconnection:
@@ -423,10 +456,14 @@ namespace Shooter2D
                         Players = new Player[I.ReadByte()];
                         Self = Player.Set(I.ReadByte(), new Player(MpName));
                         GameType = (GameTypes)I.ReadByte(); RespawnTimer = I.ReadDouble();
+                        Self.Team = I.ReadByte();
                         for (byte i = 0; i < Players.Length; i++)
                             if (I.ReadBoolean())
                             {
-                                Players[i] = new Player(i, I.ReadString());
+                                Players[i] = new Player(i, I.ReadString())
+                                {
+                                    Team = I.ReadByte()
+                                };
                             }
                         State = States.RequestMap;
                         Timers.Add("Positions", (1/30d));
@@ -510,6 +547,13 @@ namespace Shooter2D
                     Sender.Respawn(Position);
                     if (MultiPlayer.Type() == MultiPlayer.Types.Server) MultiPlayer.Send(MultiPlayer.Construct(Packet, Sender.Slot, Position), I.SenderConnection);
                     break;
+                case Packets.EndRound:
+                    VictoryStates VictoryState = (VictoryStates)I.ReadByte();
+                    byte TeamWon = ((VictoryState == VictoryStates.Team) ? I.ReadByte() : (byte)0);
+                    byte RoundEndMusicIndex = I.ReadByte();
+                    EndRound(VictoryState, TeamWon, RoundEndMusicIndex);
+                    break;
+                case Packets.NewRound: NewRound(); break;
             }
         }
 
@@ -521,7 +565,7 @@ namespace Shooter2D
             Position,
             PlaceFore, ClearFore, PlaceBack, ClearBack,
             Fire, Death, Respawn,
-            EndRound, NewRound
+            EndRound, NewRound, ChangeTeam
         }
 
         public enum States

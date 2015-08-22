@@ -35,6 +35,7 @@ namespace Shooter2D
                                 else if (Reader.Name == "ClipToFore") Tile.ClipToFore = Convert.ToBoolean(Reader.Value);
                                 else if (Reader.Name == "Invisible") Tile.Invisible = Convert.ToBoolean(Reader.Value);
                                 else if (Reader.Name == "Waypoint") Tile.Waypoint = Convert.ToByte(Reader.Value);
+                                else if (Reader.Name == "Spawn") Tile.Spawn = Convert.ToByte(Reader.Value);
                                 else if (Reader.Name == "Frames") Tile.Frames = Convert.ToByte(Reader.Value);
                                 else if (Reader.Name == "Speed") Tile.Speed = Convert.ToSingle(Reader.Value);
                         }

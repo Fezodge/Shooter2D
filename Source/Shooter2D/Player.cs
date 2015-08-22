@@ -48,7 +48,7 @@ namespace Shooter2D
         public Vector2 InterpolatedPosition;
         public float InterpolatedAngle;
 
-        public byte Team;
+        public byte Team = 1;
         public float Health;
         public bool Dead = true;
         public Player Killer;
@@ -60,6 +60,7 @@ namespace Shooter2D
             {
                 Killer.Kills++;
             }
+            Game.RoundEndWait = 1;
             Deaths++; Dead = true; RespawnTimer = Game.RespawnTimer;
             if (this == Self)
             {
@@ -71,6 +72,7 @@ namespace Shooter2D
         {
             Killer = null; Health = 1000; Dead = false;
             this.Position = Position; bool T = Collides;
+            InterpolatedPosition = this.Position;
             if (this == Self)
             {
                 if (MultiPlayer.Type() == MultiPlayer.Types.Client) MultiPlayer.Send(MultiPlayer.Construct(Packets.Respawn, Position));
@@ -111,7 +113,7 @@ namespace Shooter2D
                     }
                 if (((Team == 0) || (Self.Team == 0) || (Team != Self.Team)) && Self.Mask.Intersects(Bullet)) { Self.Health -= Mod.Weapons[Weapon].Damage; Self.Killer = this; }
             }
-            Bullets.Add(Bullet);
+            //Bullets.Add(Bullet);
         }
 
         public Player(string Name)

@@ -35,15 +35,23 @@ namespace Shooter2D
         {
             if (Back > 0)
             {
-                if (Textures.Exists("Tiles.Back." + Back)) Batch.Draw(Textures.Get("Tiles.Back." + Back), Position, null, Color.White, 0, Origin.Center, 1, SpriteEffects.None, (.8f + LayerOffset));
-                if (BackAnimation != null) Batch.Draw(BackAnimation.Texture(), Position, null, Color.White, 0, Origin.Center, 1, SpriteEffects.None, (.75f + LayerOffset));
+                Mod.Tile Tile = Mod.Back[Back];
+                if (!Tile.Invisible || (Game.State == Game.States.MapEditor))
+                {
+                    if (Textures.Exists("Tiles.Back." + Back)) Batch.Draw(Textures.Get("Tiles.Back." + Back), Position, null, Color.White, 0, Origin.Center, 1, SpriteEffects.None, (.8f + LayerOffset));
+                    if (BackAnimation != null) Batch.Draw(BackAnimation.Texture(), Position, null, Color.White, 0, Origin.Center, 1, SpriteEffects.None, (.75f + LayerOffset));
+                }
             }
             if (Fore > 0)
             {
-                float Layer = ((Mod.Fore[Fore].Type == Mod.Tile.Types.Wall) ? .4f : (Mod.Fore[Fore].Type == Mod.Tile.Types.Platform) ? .5f : .6f);
-                if (Textures.Exists("Tiles.Fore." + Fore)) Batch.Draw(Textures.Get("Tiles.Fore." + Fore), Position, null, Color.White, MathHelper.ToRadians((Angle / 128f) * 360), Origin.Center, 1, SpriteEffects.None, (Layer + LayerOffset));
-                if (ForeAnimation != null) Batch.Draw(ForeAnimation.Texture(), Position, null, Color.White, MathHelper.ToRadians((Angle / 128f) * 360), Origin.Center, 1, SpriteEffects.None, (Layer - .05f + LayerOffset));
-                if (Mod.Fore[Fore].Border) Batch.Draw(Textures.Get("Tiles.Fore." + Fore + "b"), Position, null, Color.Black, MathHelper.ToRadians((Angle / 128f) * 360), Origin.Center, 1, SpriteEffects.None, (Layer + .05f + LayerOffset));
+                Mod.Tile Tile = Mod.Fore[Fore];
+                if (!Tile.Invisible || (Game.State == Game.States.MapEditor))
+                {
+                    float Layer = ((Mod.Fore[Fore].Type == Mod.Tile.Types.Wall) ? .4f : (Mod.Fore[Fore].Type == Mod.Tile.Types.Platform) ? .5f : .6f);
+                    if (Textures.Exists("Tiles.Fore." + Fore)) Batch.Draw(Textures.Get("Tiles.Fore." + Fore), Position, null, Color.White, MathHelper.ToRadians((Angle / 128f) * 360), Origin.Center, 1, SpriteEffects.None, (Layer + LayerOffset));
+                    if (ForeAnimation != null) Batch.Draw(ForeAnimation.Texture(), Position, null, Color.White, MathHelper.ToRadians((Angle / 128f) * 360), Origin.Center, 1, SpriteEffects.None, (Layer - .05f + LayerOffset));
+                    if (Mod.Fore[Fore].Border) Batch.Draw(Textures.Get("Tiles.Fore." + Fore + "b"), Position, null, Color.Black, MathHelper.ToRadians((Angle / 128f) * 360), Origin.Center, 1, SpriteEffects.None, (Layer + .05f + LayerOffset));
+                }
             }
             //Batch.Draw(Pixel(Color.Black, true), new Rectangle((int)(Position.X - (Width / 2f)), (int)(Position.Y - (Height / 2f)), Width, Height), null, (Color.White * (1 - (Light / 255f))), 0, Origin.None);
             //Batch.DrawString(Light.ToString(), Fonts.Get("Default/Tiny"), (Position - new Vector2(0, 5)), Origin.Center, Color.White, null, 0, .85f);
